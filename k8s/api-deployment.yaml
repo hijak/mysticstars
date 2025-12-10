@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: api
-        image: jcowey/mysticstars-api
+        image: ghcr.io/jcowey/mysticstars/mysticstars-api:latest
         ports:
         - containerPort: 3000
           name: http
@@ -36,8 +36,8 @@ spec:
               key: PORT
         - name: POSTGRES_URI
           valueFrom:
-            configMapKeyRef:
-              name: mysticstars-config
+            secretKeyRef:
+              name: mysticstars-secrets
               key: POSTGRES_URI
         - name: FRONTEND_URL
           valueFrom:

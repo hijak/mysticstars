@@ -1,0 +1,33 @@
+# CronJob Container for GitHub Container Registry
+# Build context is the root directory
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install dumb-init and curl for debugging
+RUN apk add --no-cache dumb-init curl
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Copy package files from backend
+COPY backend/package*.json ./
+
+# Install dependencies (including all dependencies needed for scripts)
+RUN npm ci && npm cache clean --force
+
+# Copy application code from backend
+COPY backend/ .
+
+# Make the scripts executable
+RUN chmod +x scripts/generateReadings.js scripts/checkMissingReadings.js || true
+
+# Set ownership
+RUN chown -R nodejs:nodejs /app
+USER nodejs
+
+# Default command (can be overridden in CronJob)
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "scripts/generateReadings.js", "daily"]

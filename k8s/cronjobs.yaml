@@ -20,7 +20,7 @@ spec:
         spec:
           containers:
           - name: reading-generator
-            image: jcowey/mysticstars-cronjob # Replace with your actual image
+            image: ghcr.io/jcowey/mysticstars/mysticstars-cronjob:latest
             command: ["node"]
             args: ["scripts/generateReadings.js", "daily"]
             env:

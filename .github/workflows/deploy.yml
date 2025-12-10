@@ -1,0 +1,354 @@
+name: Deploy to Kubernetes
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+    types: [opened, synchronize, reopened]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_API: ${{ github.repository }}/mysticstars-api
+  IMAGE_NAME_CRONJOB: ${{ github.repository }}/mysticstars-cronjob
+
+jobs:
+  # Code Quality and Security Testing
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: backend
+      run: npm ci
+
+    - name: Run linting
+      working-directory: backend
+      run: npm run lint
+
+    - name: Run tests
+      working-directory: backend
+      run: npm test
+
+    - name: Security audit
+      working-directory: backend
+      run: npm audit --audit-level moderate
+
+  # Build and Push Container Images
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image-api: ${{ steps.meta-api.outputs.tags }}
+      image-cronjob: ${{ steps.meta-cronjob.outputs.tags }}
+      digest-api: ${{ steps.build-api.outputs.digest }}
+      digest-cronjob: ${{ steps.build-cronjob.outputs.digest }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata for API image
+      id: meta-api
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_API }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push API image
+      id: build-api
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.api
+        push: true
+        tags: ${{ steps.meta-api.outputs.tags }}
+        labels: ${{ steps.meta-api.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Extract metadata for CronJob image
+      id: meta-cronjob
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_CRONJOB }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push CronJob image
+      id: build-cronjob
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.cronjob
+        push: true
+        tags: ${{ steps.meta-cronjob.outputs.tags }}
+        labels: ${{ steps.meta-cronjob.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Run Trivy vulnerability scanner on API image
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ steps.meta-api.outputs.tags }}
+        format: 'sarif'
+        output: 'trivy-results-api.sarif'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-results-api.sarif'
+
+    - name: Run Trivy vulnerability scanner on CronJob image
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ steps.meta-cronjob.outputs.tags }}
+        format: 'sarif'
+        output: 'trivy-results-cronjob.sarif'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-results-cronjob.sarif'
+
+  # Deploy to Kubernetes (only on main branch)
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    permissions:
+      contents: read
+      id-token: write  # Required for Vault authentication
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+
+    - name: Install Vault CLI
+      run: |
+        wget https://releases.hashicorp.com/vault/1.15.0/vault_1.15.0_linux_amd64.zip
+        unzip vault_1.15.0_linux_amd64.zip
+        sudo mv vault /usr/local/bin/
+        vault --version
+
+    - name: Authenticate to Vault with GitHub JWT
+      run: |
+        # Get GitHub OIDC token
+        export VAULT_ADDR="${{ secrets.VAULT_ADDR }}"
+        export VAULT_TOKEN=$(vault write -field=token auth/github/login role="${{ secrets.VAULT_ROLE }}" jwt="${{ steps.token.outputs.token }}")
+
+        # Verify authentication
+        vault token lookup
+
+    - name: Get GitHub OIDC token
+      id: token
+      uses: actions/create-github-app-token@v1
+      with:
+        app-id: ${{ secrets.VAULT_GITHUB_APP_ID }}
+        private-key: ${{ secrets.VAULT_GITHUB_PRIVATE_KEY }}
+
+    - name: Retrieve secrets from Vault
+      run: |
+        export VAULT_ADDR="${{ secrets.VAULT_ADDR }}"
+        export VAULT_TOKEN=$(vault write -field=token auth/github/login role="${{ secrets.VAULT_ROLE }}" jwt="${{ steps.token.outputs.token }}")
+
+        # Retrieve secrets from KV v1 store
+        echo "Retrieving secrets from Vault..."
+
+        # Blackbox AI API key
+        BLACKBOX_API_KEY=$(vault kv get -field=BLACKBOX_API_KEY ${{ secrets.VAULT_SECRET_PATH }})
+        echo "BLACKBOX_API_KEY=$BLACKBOX_API_KEY" >> secrets.env
+
+        # Database URI
+        POSTGRES_URI=$(vault kv get -field=POSTGRES_URI ${{ secrets.VAULT_SECRET_PATH }})
+        echo "POSTGRES_URI=$POSTGRES_URI" >> secrets.env
+
+        # Telegram bot token
+        TELEGRAM_BOT_TOKEN=$(vault kv get -field=TELEGRAM_BOT_TOKEN ${{ secrets.VAULT_SECRET_PATH }})
+        echo "TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN" >> secrets.env
+
+        # Telegram chat ID
+        TELEGRAM_CHAT_ID=$(vault kv get -field=TELEGRAM_CHAT_ID ${{ secrets.VAULT_SECRET_PATH }})
+        echo "TELEGRAM_CHAT_ID=$TELEGRAM_CHAT_ID" >> secrets.env
+
+        echo "Secrets retrieved successfully"
+
+    - name: Create Kubernetes secret
+      run: |
+        export KUBECONFIG=kubeconfig
+
+        # Create namespace if it doesn't exist
+        kubectl apply -f k8s/namespace.yaml
+
+        # Create secret from environment variables
+        kubectl create secret generic mysticstars-secrets \
+          --from-env-file=secrets.env \
+          --namespace=mysticstars \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Update image tags in Kubernetes manifests
+      run: |
+        # Update API deployment image
+        sed -i "s|jcowey/mysticstars-api.*|${{ needs.build.outputs.image-api }}|g" k8s/api-deployment.yaml
+        sed -i "s|jcowey/mysticstars-cronjob.*|${{ needs.build.outputs.image-cronjob }}|g" k8s/cronjobs.yaml
+
+    - name: Deploy to Kubernetes
+      run: |
+        export KUBECONFIG=kubeconfig
+
+        # Apply ConfigMap
+        kubectl apply -f k8s/configmap.yaml
+
+        # Deploy API
+        kubectl apply -f k8s/api-deployment.yaml
+
+        # Deploy CronJobs
+        kubectl apply -f k8s/cronjobs.yaml
+
+        # Deploy Ingress
+        kubectl apply -f k8s/ingress.yaml
+
+    - name: Wait for deployment to be ready
+      run: |
+        export KUBECONFIG=kubeconfig
+
+        # Wait for API deployment to be ready
+        kubectl wait --for=condition=available --timeout=300s deployment/mysticstars-api -n mysticstars
+
+        # Verify pods are running
+        kubectl get pods -n mysticstars
+
+    - name: Health check
+      run: |
+        export KUBECONFIG=kubeconfig
+
+        # Get API service URL
+        API_URL=$(kubectl get ingress mysticstars-ingress -n mysticstars -o jsonpath='{.spec.rules[0].host}')
+
+        # Wait a moment for the service to be fully ready
+        sleep 30
+
+        # Test health endpoint
+        for i in {1..10}; do
+          if curl -f -s "https://$API_URL/api/health/live"; then
+            echo "Health check passed!"
+            break
+          else
+            echo "Health check attempt $i failed, retrying..."
+            sleep 10
+          fi
+        done
+
+    - name: Send Telegram notification
+      if: always()
+      run: |
+        # Extract secrets for notification
+        source secrets.env
+
+        if [ "${{ job.status }}" == "success" ]; then
+          MESSAGE="✅ *MysticStars Deployment Success*
+
+          🚀 Successfully deployed to production
+          📦 API Image: ${{ needs.build.outputs.image-api }}
+          ⏰ Deployed at: $(date)
+          🌐 Repository: ${{ github.repository }}"
+        else
+          MESSAGE="❌ *MysticStars Deployment Failed*
+
+          🚨 Deployment to production failed
+          📦 API Image: ${{ needs.build.outputs.image-api }}
+          ⏰ Failed at: $(date)
+          🌐 Repository: ${{ github.repository }}
+          🔗 Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        fi
+
+        # Send to Telegram
+        curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+          -H "Content-Type: application/json" \
+          -d "{\"chat_id\": \"$TELEGRAM_CHAT_ID\", \"text\": \"$MESSAGE\", \"parse_mode\": \"Markdown\"}"
+
+  # Cleanup and validation
+  validate:
+    needs: [build, deploy]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+
+    - name: Validate CronJobs
+      run: |
+        export KUBECONFIG=kubeconfig
+
+        # Check if all CronJobs are created
+        kubectl get cronjobs -n mysticstars
+
+        # Verify CronJob schedules
+        kubectl get cronjobs -n mysticstars -o custom-columns=NAME:.metadata.name,SCHEDULE:.spec.schedule
+
+    - name: Post-deployment verification
+      run: |
+        export KUBECONFIG=kubeconfig
+
+        # Get API service URL
+        API_URL=$(kubectl get ingress mysticstars-ingress -n mysticstars -o jsonpath='{.spec.rules[0].host}')
+
+        # Test API endpoints
+        echo "Testing API health endpoints..."
+
+        # Test liveness
+        curl -f -s "https://$API_URL/api/health/live" || (echo "Liveness check failed" && exit 1)
+
+        # Test readiness
+        curl -f -s "https://$API_URL/api/health/ready" || (echo "Readiness check failed" && exit 1)
+
+        # Test API root
+        curl -f -s "https://$API_URL/api/" || (echo "API root check failed" && exit 1)
+
+        echo "All API health checks passed!"

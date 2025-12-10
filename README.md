@@ -1,6 +1,54 @@
-# 🔮 MysticStars - Magical Horoscope Website
+# MysticStars 🌟
 
-A beautiful, magical horoscope website that provides daily, weekly, monthly, and yearly zodiac readings powered by Blackbox AI and deployed on Kubernetes.
+A modern horoscope generation platform powered by AI. This application generates personalized horoscope readings using Blackbox AI models and delivers them through a beautiful web interface.
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js 18+
+- PostgreSQL database
+- Docker and Kubernetes cluster
+- HashiCorp Vault for secrets management
+- Blackbox AI API key
+
+### 1. Local Development
+
+```bash
+# Clone the repository
+git clone https://github.com/jcowey/mysticstars.git
+cd mysticstars
+
+# Install dependencies
+cd backend
+npm install
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your configuration
+
+# Start the development server
+npm run dev
+
+# Run tests
+npm test
+```
+
+### 2. Production Deployment
+
+The application is designed for automated deployment via GitHub Actions. See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed setup instructions.
+
+**Quick Setup:**
+
+1. **Configure Vault**: Follow [VAULT_SETUP.md](./VAULT_SETUP.md)
+2. **Set GitHub Secrets**: Configure required secrets in GitHub repository
+3. **Push to main**: Deployment happens automatically
+
+```bash
+git add .
+git commit -m "Initial deployment setup"
+git push origin main
+```
 
 ## ✨ Features
 
