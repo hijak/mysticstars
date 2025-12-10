@@ -1,0 +1,32 @@
+# Use Node.js 18 LTS
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install dumb-init and curl for debugging
+RUN apk add --no-cache dumb-init curl
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies (including dev dependencies for the generator)
+RUN npm ci && npm cache clean --force
+
+# Copy application code
+COPY . .
+
+# Make the script executable
+# Make the scripts executable
+RUN chmod +x scripts/generateReadings.js scripts/checkMissingReadings.js || true
+
+# Set ownership
+RUN chown -R nodejs:nodejs /app
+USER nodejs
+
+# Default command (can be overridden in CronJob)
+CMD ["node", "scripts/generateReadings.js", "daily"]

@@ -1,0 +1,1803 @@
+/* Magical-themed CSS for Enchanted Zodiac */
+:root {
+    /* Light theme colors */
+    --bg-primary: linear-gradient(135deg, #f8f9ff 0%, #e8ecff 25%, #d5ddff 50%, #c7d2ff 75%, #b8c7ff 100%);
+    --bg-card: rgba(255,255,255,0.95);
+    --bg-card-alt: rgba(255,255,255,0.85);
+    --text-primary: #2d3436;
+    --text-secondary: #636e72;
+    --text-header: #2d3436;
+    --text-on-card: #2d3436;
+    --accent-gold: #b8860b;
+    --accent-purple: #6c5ce7;
+    --accent-light-purple: #a29bfe;
+    --border-color: rgba(108,92,231,0.4);
+    --shadow-color: rgba(108,92,231,0.3);
+    --sparkle-bg: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="sparkles" x="0" y="0" width="50" height="50" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="%236c5ce7" opacity="0.4"/><circle cx="10" cy="40" r="0.5" fill="%236c5ce7" opacity="0.6"/><circle cx="40" cy="10" r="0.8" fill="%236c5ce7" opacity="0.5"/><circle cx="35" cy="35" r="0.3" fill="%236c5ce7" opacity="0.7"/></pattern></defs><rect width="100" height="100" fill="url(%23sparkles)"/></svg>');
+}
+
+/* Dark theme colors */
+[data-theme="dark"] {
+    --bg-primary: linear-gradient(135deg, #0d0d0d 0%, #1a0d1a 25%, #2d1b69 50%, #74b9ff 75%, #fd79a8 100%);
+    --bg-card: rgba(42,42,42,0.95);
+    --bg-card-alt: rgba(26,26,26,0.85);
+    --text-primary: #e0e0e0;
+    --text-secondary: #cccccc;
+    --text-header: #ffffff;
+    --text-on-card: #e0e0e0;
+    --accent-gold: #ffd700;
+    --accent-purple: #a29bfe;
+    --accent-light-purple: #74b9ff;
+    --border-color: rgba(255,215,0,0.4);
+    --shadow-color: rgba(255,215,0,0.5);
+    --sparkle-bg: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="sparkles-dark" x="0" y="0" width="50" height="50" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="%23ffffff" opacity="0.3"/><circle cx="10" cy="40" r="0.5" fill="%23ffd700" opacity="0.6"/><circle cx="40" cy="10" r="0.8" fill="%23ffffff" opacity="0.4"/><circle cx="35" cy="35" r="0.3" fill="%23ffd700" opacity="0.7"/></pattern></defs><rect width="100" height="100" fill="url(%23sparkles-dark)"/></svg>');
+}
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Rubik', sans-serif;
+    background: var(--bg-primary);
+    background-attachment: fixed;
+    color: var(--text-primary);
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+    transition: all 0.3s ease;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--sparkle-bg);
+    pointer-events: none;
+    z-index: -1;
+    animation: twinkle 3s ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Mobile button spacing container */
+.mobile-button-spacer {
+    height: 0;
+    display: none;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 50px;
+    padding: 40px 0;
+}
+
+.title {
+    font-family: 'Rubik', sans-serif;
+    font-size: 4rem;
+    color: var(--text-header);
+    text-shadow: 0 0 20px var(--accent-purple), 0 0 40px var(--accent-purple), 0 0 60px var(--accent-purple);
+    margin-bottom: 10px;
+    animation: shimmer 3s ease-in-out infinite alternate;
+    font-weight: 700;
+}
+
+@keyframes shimmer {
+    0%, 100% { 
+        text-shadow: 0 0 20px var(--accent-purple), 0 0 40px var(--accent-purple), 0 0 60px var(--accent-purple);
+    }
+    50% { 
+        text-shadow: 0 0 30px var(--accent-purple), 0 0 50px var(--accent-purple), 0 0 70px var(--accent-purple);
+    }
+}
+
+/* Screen reader only text */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Breadcrumb Navigation */
+.breadcrumb-nav {
+    margin-bottom: 30px;
+    padding: 15px 20px;
+    background: var(--bg-card-alt);
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    backdrop-filter: blur(5px);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.breadcrumb-list {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-family: 'Rubik', sans-serif;
+    font-size: 0.9rem;
+}
+
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.breadcrumb-link {
+    color: var(--accent-purple);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    padding: 4px 8px;
+    border-radius: 5px;
+}
+
+.breadcrumb-link:hover {
+    color: var(--accent-light-purple);
+    background: rgba(108, 92, 231, 0.1);
+    text-decoration: underline;
+}
+
+.breadcrumb-separator {
+    color: var(--text-secondary);
+    font-weight: bold;
+    opacity: 0.6;
+    font-size: 1.1rem;
+}
+
+.breadcrumb-current {
+    color: var(--text-primary);
+    font-weight: 600;
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    border: 1px solid var(--border-color);
+}
+
+/* Quick Access Panel */
+.quick-access-panel {
+    position: fixed;
+    top: 90px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.quick-access-toggle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    border: 2px solid var(--border-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px var(--shadow-color);
+    backdrop-filter: blur(10px);
+}
+
+.quick-access-toggle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px var(--shadow-color);
+}
+
+.quick-access-content {
+    position: absolute;
+    top: 70px;
+    right: 0;
+    width: 280px;
+    background: var(--bg-card);
+    border: 2px solid var(--border-color);
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 10px 30px var(--shadow-color);
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+}
+
+.quick-access-panel.active .quick-access-content {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.quick-access-content h3 {
+    color: var(--accent-purple);
+    font-family: 'Rubik', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    text-align: center;
+    text-shadow: 0 0 10px var(--accent-purple);
+}
+
+.quick-zodiac-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.quick-zodiac-btn {
+    width: 45px;
+    height: 45px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-card-alt);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    color: var(--accent-purple);
+}
+
+.quick-zodiac-btn:hover {
+    transform: scale(1.1);
+    border-color: var(--accent-gold);
+    background: var(--bg-card);
+    box-shadow: 0 3px 10px var(--shadow-color);
+}
+
+.quick-reading-types h4 {
+    color: var(--accent-light-purple);
+    font-family: 'Rubik', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.quick-reading-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.quick-reading-btn {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-card-alt);
+    cursor: pointer;
+    color: var(--text-on-card);
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    font-family: 'Rubik', sans-serif;
+}
+
+.quick-reading-btn:hover {
+    border-color: var(--accent-purple);
+    background: var(--bg-card);
+    color: var(--accent-purple);
+    transform: translateY(-2px);
+}
+
+/* Theme Toggle */
+.theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    border: 2px solid var(--border-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    box-shadow: 0 4px 15px var(--shadow-color);
+    backdrop-filter: blur(10px);
+}
+
+/* Mobile Navigation Toggle */
+.mobile-nav-toggle {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    border: 2px solid var(--border-color);
+    cursor: pointer;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: all 0.3s ease;
+    z-index: 1001;
+    box-shadow: 0 4px 15px var(--shadow-color);
+    backdrop-filter: blur(10px);
+}
+
+.burger-line {
+    width: 24px;
+    height: 3px;
+    background: var(--accent-purple);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+}
+
+.mobile-nav-toggle.active .burger-line:nth-child(1) {
+    transform: rotate(45deg) translate(7px, 5px);
+}
+
+.mobile-nav-toggle.active .burger-line:nth-child(2) {
+    opacity: 0;
+}
+
+.mobile-nav-toggle.active .burger-line:nth-child(3) {
+    transform: rotate(-45deg) translate(7px, -5px);
+}
+
+.mobile-nav-toggle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px var(--shadow-color);
+}
+
+/* Mobile Navigation Overlay */
+.mobile-nav-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.mobile-nav-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.mobile-nav-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 280px;
+    height: 100%;
+    background: var(--bg-card);
+    border-right: 2px solid var(--border-color);
+    padding: 80px 20px 20px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+    box-shadow: 2px 0 20px var(--shadow-color);
+}
+
+.mobile-nav-overlay.active .mobile-nav-content {
+    transform: translateX(0);
+}
+
+.mobile-nav-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: transparent;
+    font-size: 2rem;
+    color: var(--accent-purple);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mobile-nav-close:hover {
+    background: var(--bg-card-alt);
+    transform: rotate(90deg);
+}
+
+.mobile-nav-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.mobile-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 18px 20px;
+    background: var(--bg-card-alt);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    color: var(--text-on-card);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+    font-family: 'Rubik', sans-serif;
+    font-weight: 500;
+    font-size: 1.1rem;
+}
+
+.mobile-nav-item:hover {
+    background: var(--bg-card);
+    border-color: var(--accent-gold);
+    transform: translateX(5px);
+    box-shadow: 0 5px 15px var(--shadow-color);
+    color: var(--accent-purple);
+}
+
+.nav-icon {
+    font-size: 1.5rem;
+    min-width: 30px;
+    text-align: center;
+    filter: drop-shadow(0 0 8px var(--accent-light-purple));
+}
+
+.nav-text {
+    flex: 1;
+    font-weight: 600;
+}
+
+.theme-toggle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px var(--shadow-color);
+}
+
+.theme-icon {
+    transition: transform 0.3s ease;
+}
+
+.theme-toggle:hover .theme-icon {
+    transform: rotate(180deg);
+}
+
+.subtitle {
+    font-size: 1.5rem;
+    color: var(--text-header);
+    font-style: italic;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    font-family: 'Lugrasimo', cursive;
+}
+
+/* Header Navigation */
+.header-nav {
+    margin-top: 20px;
+}
+
+.header-nav ul {
+    display: flex;
+    list-style: none;
+    justify-content: center;
+    gap: 30px;
+}
+
+.header-nav a {
+    color: var(--text-on-card);
+    text-decoration: none;
+    font-size: 1.1rem;
+    font-family: 'Rubik', sans-serif;
+    font-weight: 500;
+    padding: 10px 20px;
+    border-radius: 25px;
+    background: var(--bg-card-alt);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.header-nav a:hover {
+    background: var(--bg-card);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px var(--shadow-color);
+}
+
+/* Intro Content */
+.intro-content {
+    text-align: center;
+    margin-bottom: 50px;
+    padding: 30px;
+    background: var(--bg-card);
+    border-radius: 15px;
+    border: 2px solid var(--border-color);
+    box-shadow: 0 10px 30px var(--shadow-color);
+    backdrop-filter: blur(10px);
+}
+
+.intro-content h2 {
+    font-size: 2.2rem;
+    color: var(--accent-purple);
+    margin-bottom: 20px;
+    font-family: 'Rubik', sans-serif;
+    font-weight: 600;
+    text-shadow: 0 0 10px var(--accent-purple);
+}
+
+.intro-content p {
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: var(--text-on-card);
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.main {
+    flex: 1;
+}
+
+/* Zodiac Selection */
+.zodiac-selection h2 {
+    text-align: center;
+    font-size: 2.5rem;
+    color: var(--text-header);
+    margin-bottom: 20px;
+    text-shadow: 0 0 15px var(--accent-purple);
+    font-family: 'Rubik', sans-serif;
+}
+
+.zodiac-selection > p {
+    text-align: center;
+    font-size: 1.1rem;
+    color: var(--text-header);
+    margin-bottom: 40px;
+    font-family: 'Lugrasimo', cursive;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+}
+
+.zodiac-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.zodiac-card {
+    background: var(--bg-card);
+    border: 2px solid var(--border-color);
+    border-radius: 15px;
+    padding: 30px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px var(--shadow-color);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+}
+
+.zodiac-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, var(--shadow-color) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.zodiac-card:hover::before {
+    opacity: 1;
+}
+
+.zodiac-card:hover {
+    transform: translateY(-10px) scale(1.05);
+    border-color: var(--accent-gold);
+    box-shadow: 0 15px 35px var(--shadow-color);
+}
+
+.zodiac-card.selected {
+    border-color: var(--accent-gold);
+    background: var(--bg-card-alt);
+    box-shadow: 0 0 30px var(--accent-gold);
+}
+
+.zodiac-symbol {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    color: var(--accent-purple);
+    text-shadow: 0 0 15px var(--accent-light-purple);
+}
+
+.zodiac-name {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: var(--text-on-card);
+    font-family: 'Rubik', sans-serif;
+}
+
+.zodiac-dates {
+    color: var(--text-on-card);
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.zodiac-hover-info {
+    position: absolute;
+    bottom: 15px;
+    left: 15px;
+    right: 15px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 10px;
+    padding: 12px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    z-index: 2;
+}
+
+[data-theme="dark"] .zodiac-hover-info {
+    background: rgba(42, 42, 42, 0.95);
+    color: var(--text-on-card);
+}
+
+.zodiac-card:hover .zodiac-hover-info {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.zodiac-element {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent-purple);
+    margin-bottom: 4px;
+    text-align: center;
+}
+
+.zodiac-traits {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-align: center;
+    font-style: italic;
+    line-height: 1.2;
+}
+
+/* Reading Type Selection */
+.reading-type-selection h2 {
+    text-align: center;
+    font-size: 2.5rem;
+    color: var(--text-header);
+    margin-bottom: 20px;
+    text-shadow: 0 0 15px var(--accent-purple);
+    font-family: 'Rubik', sans-serif;
+}
+
+.reading-type-selection > p {
+    text-align: center;
+    font-size: 1.1rem;
+    color: var(--text-header);
+    margin-bottom: 40px;
+    font-family: 'Lugrasimo', cursive;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+}
+
+.reading-types {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.reading-btn {
+    background: var(--bg-card);
+    border: 2px solid var(--border-color);
+    border-radius: 15px;
+    padding: 40px 20px;
+    color: var(--text-on-card);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px var(--shadow-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+}
+
+.reading-btn::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, var(--shadow-color) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.reading-btn:hover::before {
+    opacity: 1;
+}
+
+.reading-btn:hover {
+    transform: translateY(-8px);
+    border-color: var(--accent-gold);
+    box-shadow: 0 15px 35px var(--shadow-color);
+}
+
+.reading-icon {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.reading-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--accent-purple);
+    font-family: 'Rubik', sans-serif;
+    position: relative;
+    z-index: 1;
+}
+
+.reading-desc {
+    font-size: 0.9rem;
+    color: var(--text-on-card);
+    opacity: 0.8;
+    font-style: italic;
+    font-family: 'Lugrasimo', cursive;
+    position: relative;
+    z-index: 1;
+}
+
+/* Reading Display */
+.reading-display h2 {
+    color: var(--text-header);
+    font-size: 2rem;
+    margin-bottom: 30px;
+    text-shadow: 0 0 15px var(--accent-purple);
+    font-family: 'Rubik', sans-serif;
+    font-weight: 600;
+}
+
+.reading-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.back-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px 20px;
+    color: var(--text-on-card);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+    font-family: 'Rubik', sans-serif;
+    font-weight: 500;
+}
+
+.back-btn:hover {
+    background: var(--bg-card-alt);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px var(--shadow-color);
+    border-color: var(--accent-purple);
+}
+
+.reading-content {
+    background: var(--bg-card);
+    border: 2px solid var(--border-color);
+    border-radius: 15px;
+    padding: 40px;
+    box-shadow: 0 10px 30px var(--shadow-color);
+    min-height: 300px;
+    position: relative;
+    backdrop-filter: blur(10px);
+}
+
+.loading {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.crystal-loader {
+    font-size: 4rem;
+    animation: float 2s ease-in-out infinite;
+    margin-bottom: 20px;
+    color: var(--accent-purple);
+    text-shadow: 0 0 20px var(--accent-light-purple);
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(180deg); }
+}
+
+.loading p {
+    font-size: 1.2rem;
+    color: var(--accent-purple);
+    font-style: italic;
+    font-family: 'Lugrasimo', cursive;
+}
+
+.reading-text {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: var(--text-on-card);
+    font-family: 'Rubik', sans-serif;
+}
+
+.reading-text p {
+    margin-bottom: 20px;
+}
+
+/* Enhanced Reading Format Styles */
+.reading-container {
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.reading-intro {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: linear-gradient(135deg, var(--accent-light-purple)15, transparent);
+    border-radius: 15px;
+    border: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+}
+
+.reading-intro::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--sparkle-bg);
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.cosmic-symbol {
+    font-size: 1.5rem;
+    color: var(--accent-gold);
+    text-shadow: 0 0 10px var(--accent-gold);
+    animation: gentle-pulse 2s ease-in-out infinite;
+    display: inline-block;
+    margin: 0 10px;
+}
+
+@keyframes gentle-pulse {
+    0%, 100% { 
+        transform: scale(1); 
+        opacity: 0.8; 
+    }
+    50% { 
+        transform: scale(1.1); 
+        opacity: 1; 
+    }
+}
+
+.reading-greeting {
+    font-family: 'Lugrasimo', cursive;
+    font-size: 1.1rem;
+    color: var(--accent-purple);
+    font-style: italic;
+    margin: 10px 0;
+    text-shadow: 0 0 8px var(--accent-light-purple);
+    position: relative;
+    z-index: 1;
+}
+
+.reading-main {
+    margin: 30px 0;
+    position: relative;
+}
+
+.reading-paragraph {
+    font-size: 1.15rem;
+    line-height: 1.9;
+    color: var(--text-on-card);
+    text-align: left;
+    margin-bottom: 30px;
+    padding: 25px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border-left: 4px solid var(--accent-gold);
+    position: relative;
+    backdrop-filter: blur(5px);
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+}
+
+.reading-paragraph:last-of-type {
+    margin-bottom: 0;
+}
+
+.reading-paragraph::before {
+    content: '"';
+    position: absolute;
+    top: -10px;
+    left: 15px;
+    font-size: 3rem;
+    color: var(--accent-light-purple);
+    opacity: 0.3;
+    font-family: serif;
+    line-height: 1;
+}
+
+.reading-paragraph::after {
+    content: '"';
+    position: absolute;
+    bottom: -25px;
+    right: 15px;
+    font-size: 3rem;
+    color: var(--accent-light-purple);
+    opacity: 0.3;
+    font-family: serif;
+    line-height: 1;
+}
+
+.main-reading {
+    background: linear-gradient(135deg, var(--accent-purple)10, var(--accent-gold)05);
+    border-left: 4px solid var(--accent-purple);
+    font-weight: 500;
+}
+
+.first-paragraph {
+    background: linear-gradient(135deg, var(--accent-purple)08, transparent);
+}
+
+.second-paragraph {
+    background: linear-gradient(135deg, transparent, var(--accent-gold)08);
+}
+
+.paragraph-divider {
+    text-align: center;
+    margin: 25px 0;
+    position: relative;
+}
+
+.paragraph-divider::before,
+.paragraph-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 35%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--accent-light-purple), transparent);
+}
+
+.paragraph-divider::before {
+    left: 0;
+}
+
+.paragraph-divider::after {
+    right: 0;
+}
+
+.divider-ornament {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--bg-card);
+    padding: 12px 20px;
+    border-radius: 25px;
+    border: 1px solid var(--border-color);
+    backdrop-filter: blur(10px);
+    display: inline-flex;
+}
+
+.divider-star {
+    font-size: 1.2rem;
+    color: var(--accent-gold);
+    text-shadow: 0 0 8px var(--accent-gold);
+    animation: gentle-twinkle 3s ease-in-out infinite;
+}
+
+.divider-center {
+    font-size: 1.5rem;
+    color: var(--accent-purple);
+    text-shadow: 0 0 10px var(--accent-purple);
+    margin: 0 5px;
+}
+
+@keyframes gentle-twinkle {
+    0%, 100% { 
+        opacity: 0.7; 
+        transform: scale(1); 
+    }
+    50% { 
+        opacity: 1; 
+        transform: scale(1.1); 
+    }
+}
+
+.reading-blessing {
+    text-align: center;
+    margin-top: 35px;
+    padding: 20px;
+    background: linear-gradient(135deg, var(--accent-gold)10, var(--accent-purple)10);
+    border-radius: 15px;
+    border: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+}
+
+.reading-blessing::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--sparkle-bg);
+    opacity: 0.2;
+    pointer-events: none;
+}
+
+.blessing-text {
+    font-family: 'Lugrasimo', cursive;
+    font-size: 1rem;
+    color: var(--accent-gold);
+    font-style: italic;
+    margin: 0;
+    text-shadow: 0 0 8px var(--accent-gold);
+    position: relative;
+    z-index: 1;
+    font-weight: 500;
+}
+
+.error-text {
+    color: var(--accent-purple);
+    text-align: center;
+    font-style: italic;
+    font-family: 'Lugrasimo', cursive;
+}
+
+/* Discover the Zodiac Section */
+.discover-zodiac {
+    margin: 60px 0;
+    padding: 40px 0;
+}
+
+.discover-zodiac h2 {
+    text-align: center;
+    font-size: 2.5rem;
+    color: var(--text-header);
+    margin-bottom: 20px;
+    text-shadow: 0 0 15px var(--accent-purple);
+    font-family: 'Rubik', sans-serif;
+    font-weight: 600;
+}
+
+.discover-intro {
+    text-align: center;
+    font-size: 1.1rem;
+    color: var(--text-header);
+    margin-bottom: 50px;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.7;
+    font-family: 'Lugrasimo', cursive;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+}
+
+.zodiac-traits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.trait-card {
+    background: var(--bg-card);
+    border: 2px solid var(--border-color);
+    border-radius: 15px;
+    padding: 25px;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px var(--shadow-color);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+}
+
+.trait-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, var(--shadow-color) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.trait-card:hover::before {
+    opacity: 1;
+}
+
+.trait-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--accent-gold);
+    box-shadow: 0 15px 35px var(--shadow-color);
+}
+
+.trait-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.trait-symbol {
+    font-size: 2.5rem;
+    color: var(--accent-purple);
+    text-shadow: 0 0 15px var(--accent-light-purple);
+    min-width: 50px;
+}
+
+.trait-name {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--text-on-card);
+    font-family: 'Rubik', sans-serif;
+    flex: 1;
+}
+
+.trait-dates {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    opacity: 0.8;
+    font-style: italic;
+}
+
+.trait-content {
+    position: relative;
+    z-index: 1;
+}
+
+.trait-element,
+.trait-ruler {
+    font-size: 0.95rem;
+    color: var(--text-on-card);
+    margin-bottom: 8px;
+    opacity: 0.9;
+}
+
+.trait-element strong,
+.trait-ruler strong {
+    color: var(--accent-purple);
+    font-weight: 600;
+}
+
+.trait-description {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text-on-card);
+    margin: 15px 0 20px 0;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border-left: 3px solid var(--accent-gold);
+}
+
+.trait-qualities {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.quality-tag {
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-light-purple));
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    font-family: 'Rubik', sans-serif;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Footer */
+.footer {
+    margin-top: 50px;
+    padding: 40px 0 20px;
+    background: var(--bg-card-alt);
+    border-top: 2px solid var(--border-color);
+    backdrop-filter: blur(10px);
+    border-radius: 20px 20px 0 0;
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+    margin-bottom: 30px;
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 20px;
+}
+
+.footer-section {
+    text-align: center;
+}
+
+.footer-section h3 {
+    font-size: 1.4rem;
+    color: var(--accent-gold);
+    margin-bottom: 15px;
+    font-family: 'Rubik', sans-serif;
+    font-weight: 600;
+    text-shadow: 0 0 10px var(--shadow-color);
+}
+
+.footer-section p {
+    color: var(--text-on-card);
+    line-height: 1.6;
+    font-size: 0.95rem;
+    margin-bottom: 10px;
+}
+
+.footer-section ul {
+    list-style: none;
+    padding: 0;
+}
+
+.footer-section ul li {
+    color: var(--text-on-card);
+    opacity: 0.8;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+}
+
+.footer-section ul li:hover {
+    color: var(--accent-light-purple);
+    cursor: default;
+}
+
+.footer-bottom {
+    text-align: center;
+    padding: 20px;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-card);
+    backdrop-filter: blur(15px);
+}
+
+.footer-bottom p {
+    color: var(--text-on-card);
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+    font-family: 'Lugrasimo', cursive;
+}
+
+.footer-bottom p:first-child {
+    font-weight: bold;
+    color: var(--accent-gold);
+    text-shadow: 0 0 10px var(--shadow-color);
+}
+
+.footer-bottom a {
+    color: var(--accent-purple);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-family: 'Rubik', sans-serif;
+    font-weight: 500;
+}
+
+.footer-bottom a:hover {
+    color: var(--accent-light-purple);
+    text-shadow: 0 0 8px var(--accent-light-purple);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .title {
+        font-size: 2.5rem;
+    }
+    
+    .subtitle {
+        font-size: 1.2rem;
+    }
+    
+    /* Show mobile navigation toggle and hide desktop nav on mobile */
+    .mobile-nav-toggle {
+        display: flex;
+    }
+    
+    .header-nav {
+        display: none;
+    }
+    
+    /* Add spacing for mobile buttons */
+    .mobile-button-spacer {
+        display: block;
+        height: 80px;
+    }
+    
+    .container {
+        padding: 100px 20px 20px;
+    }
+    
+    .reading-types {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+    }
+    
+    .reading-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .reading-content {
+        padding: 20px;
+    }
+    
+    .header-nav ul {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .footer-content {
+        grid-template-columns: 1fr;
+        gap: 25px;
+        text-align: center;
+    }
+    
+    .footer-section h3 {
+        font-size: 1.2rem;
+    }
+    
+    .theme-toggle {
+        width: 50px;
+        height: 50px;
+        font-size: 1.2rem;
+    }
+    
+    /* Enhanced Reading Styles for Tablet */
+    .reading-paragraph {
+        font-size: 1.1rem;
+        padding: 22px;
+    }
+    
+    .reading-intro,
+    .reading-blessing {
+        padding: 18px;
+    }
+    
+    .cosmic-symbol {
+        font-size: 1.3rem;
+    }
+    
+    .reading-greeting {
+        font-size: 1.05rem;
+    }
+    
+    .divider-ornament {
+        padding: 10px 16px;
+        gap: 6px;
+    }
+    
+    .divider-star {
+        font-size: 1.1rem;
+    }
+    
+    .divider-center {
+        font-size: 1.3rem;
+        margin: 0 3px;
+    }
+    
+    .blessing-text {
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 15px;
+    }
+    
+    .zodiac-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .reading-types {
+        grid-template-columns: 1fr;
+    }
+    
+    .title {
+        font-size: 2rem;
+    }
+    
+    .intro-content {
+        padding: 20px;
+    }
+    
+    .reading-btn {
+        padding: 30px 15px;
+    }
+    
+    .footer {
+        margin-top: 30px;
+        padding: 30px 0 15px;
+    }
+    
+    .footer-content {
+        padding: 0 15px;
+    }
+    
+    .footer-bottom {
+        padding: 15px;
+    }
+    
+    .footer-bottom p {
+        font-size: 0.8rem;
+    }
+    
+    .reading-icon {
+        font-size: 2rem;
+    }
+    
+    /* Adjust mobile nav content width */
+    .mobile-nav-content {
+        width: 260px;
+    }
+
+    /* Quick Access Mobile Optimization for small screens */
+    .quick-access-content {
+        width: 240px;
+        padding: 15px;
+    }
+
+    .quick-zodiac-btn {
+        width: 42px;
+        height: 42px;
+        font-size: 1.1rem;
+    }
+
+    .quick-reading-btn {
+        padding: 10px 8px;
+        font-size: 0.75rem;
+        min-height: 44px; /* Ensure minimum touch target size */
+    }
+
+    /* Breadcrumb optimization for small screens */
+    .breadcrumb-nav {
+        padding: 10px 12px;
+    }
+
+    .breadcrumb-list {
+        font-size: 0.8rem;
+        flex-wrap: wrap;
+        gap: 2px;
+    }
+
+    .breadcrumb-separator {
+        font-size: 1rem;
+    }
+
+    /* Ensure touch targets are at least 44px */
+    .zodiac-card {
+        min-height: 200px;
+        touch-action: manipulation;
+    }
+
+    .reading-btn {
+        min-height: 120px;
+        touch-action: manipulation;
+    }
+
+    .theme-toggle,
+    .mobile-nav-toggle,
+    .quick-access-toggle {
+        min-width: 44px;
+        min-height: 44px;
+        touch-action: manipulation;
+    }
+    
+    /* Responsive Discover Zodiac Section */
+    .zodiac-traits-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .trait-card {
+        padding: 20px;
+    }
+    
+    .trait-name {
+        font-size: 1.5rem;
+    }
+    
+    .trait-symbol {
+        font-size: 2rem;
+    }
+    
+    /* Enhanced Reading Styles for Mobile */
+    .reading-paragraph {
+        font-size: 1rem;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .reading-paragraph::before,
+    .reading-paragraph::after {
+        font-size: 2rem;
+    }
+    
+    .reading-paragraph::before {
+        top: -5px;
+        left: 10px;
+    }
+    
+    .reading-paragraph::after {
+        bottom: -15px;
+        right: 10px;
+    }
+    
+    .cosmic-symbol {
+        font-size: 1.2rem;
+        margin: 0 5px;
+    }
+    
+    .reading-greeting {
+        font-size: 1rem;
+    }
+    
+    .divider-ornament {
+        padding: 8px 14px;
+        gap: 5px;
+    }
+    
+    .divider-star {
+        font-size: 1rem;
+    }
+    
+    .divider-center {
+        font-size: 1.2rem;
+        margin: 0 2px;
+    }
+    
+    .blessing-text {
+        font-size: 0.9rem;
+    }
+    
+    .reading-intro,
+    .reading-blessing {
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .paragraph-divider {
+        margin: 20px 0;
+    }
+}
+
+/* Legal Pages Styles */
+.legal-content {
+    background: var(--bg-card);
+    border-radius: 15px;
+    padding: 40px;
+    margin: 20px 0;
+    border: 2px solid var(--border-color);
+    box-shadow: 0 10px 30px var(--shadow-color);
+    backdrop-filter: blur(10px);
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.legal-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.legal-header h1 {
+    color: var(--accent-purple);
+    font-family: 'Cinzel', serif;
+    font-size: 2.5rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    text-shadow: 0 0 15px var(--accent-purple);
+}
+
+.last-updated {
+    color: var(--text-secondary);
+    font-style: italic;
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+.legal-body h2 {
+    color: var(--accent-purple);
+    font-family: 'Rubik', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin: 35px 0 20px 0;
+    text-shadow: 0 0 8px var(--accent-purple);
+}
+
+.legal-body h3 {
+    color: var(--accent-light-purple);
+    font-family: 'Rubik', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 25px 0 15px 0;
+}
+
+.legal-body p, .legal-body li {
+    color: var(--text-on-card);
+    line-height: 1.8;
+    margin-bottom: 16px;
+    font-family: 'Rubik', sans-serif;
+    font-size: 1rem;
+}
+
+.legal-body ul {
+    margin-left: 25px;
+    margin-bottom: 20px;
+}
+
+.legal-body li {
+    margin-bottom: 10px;
+    padding-left: 5px;
+}
+
+.legal-body strong {
+    color: var(--accent-purple);
+    font-weight: 600;
+}
+
+.legal-body a {
+    color: var(--accent-purple);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.legal-body a:hover {
+    text-decoration: underline;
+    text-shadow: 0 0 5px var(--accent-purple);
+}
+
+.legal-footer {
+    margin-top: 40px;
+    padding-top: 25px;
+    border-top: 2px solid var(--border-color);
+    text-align: center;
+}
+
+.legal-footer p {
+    font-style: italic;
+    opacity: 0.9;
+    color: var(--text-secondary);
+}
+
+/* Mobile responsiveness for legal pages */
+@media (max-width: 768px) {
+    .legal-content {
+        padding: 25px;
+        margin: 15px;
+    }
+    
+    .legal-header h1 {
+        font-size: 2rem;
+    }
+    
+    .legal-body h2 {
+        font-size: 1.4rem;
+    }
+    
+    .legal-body h3 {
+        font-size: 1.2rem;
+    }
+    
+    .legal-body p, .legal-body li {
+        font-size: 0.95rem;
+    }
+
+    /* Quick Access Mobile Optimization */
+    .quick-access-panel {
+        top: 90px;
+        right: 10px;
+    }
+
+    .quick-access-toggle {
+        width: 50px;
+        height: 50px;
+        font-size: 1.3rem;
+    }
+
+    .quick-access-content {
+        width: 260px;
+        top: 60px;
+        right: 0;
+    }
+
+    /* Breadcrumb Mobile Optimization */
+    .breadcrumb-nav {
+        margin-bottom: 20px;
+        padding: 12px 15px;
+    }
+
+    .breadcrumb-list {
+        font-size: 0.85rem;
+        gap: 3px;
+    }
+
+    .breadcrumb-link,
+    .breadcrumb-current {
+        padding: 3px 6px;
+        font-size: 0.8rem;
+    }
+
+    /* Zodiac hover info for mobile (touch) */
+    .zodiac-hover-info {
+        position: static;
+        opacity: 1;
+        transform: none;
+        margin-top: 10px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--border-color);
+        backdrop-filter: blur(5px);
+    }
+
+    [data-theme="dark"] .zodiac-hover-info {
+        background: rgba(0, 0, 0, 0.3);
+    }
+}
+

@@ -1,0 +1,310 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: daily-readings-generator
+  namespace: mysticstars
+  labels:
+    app: daily-readings-generator
+spec:
+  schedule: "0 1 * * *" # Every day at 1:00 AM
+  timeZone: "UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: daily-readings-generator
+        spec:
+          containers:
+          - name: reading-generator
+            image: jcowey/mysticstars-cronjob # Replace with your actual image
+            command: ["node"]
+            args: ["scripts/generateReadings.js", "daily"]
+            env:
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: mysticstars-config
+                  key: NODE_ENV
+            - name: API_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mysticstars-config
+                  key: API_BASE_URL
+            - name: BLACKBOX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mysticstars-secrets
+                  key: BLACKBOX_API_KEY
+            - name: BLACKBOX_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: mysticstars-config
+                  key: BLACKBOX_MODEL
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: 300m
+                memory: 256Mi
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+              readOnlyRootFilesystem: false
+              allowPrivilegeEscalation: false
+          restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: readings-monitor
+  namespace: mysticstars
+  labels:
+    app: readings-monitor
+spec:
+  schedule: "*/30 * * * *" # Every 30 minutes
+  timeZone: "UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: readings-monitor
+        spec:
+          containers:
+          - name: readings-monitor
+            image: jcowey/mysticstars-cronjob
+            imagePullPolicy: Always
+            command: ["node"]
+            args: ["scripts/checkMissingReadings.js"]
+            env:
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: mysticstars-config
+                  key: NODE_ENV
+            - name: API_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mysticstars-config
+                  key: API_BASE_URL
+            - name: TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: mysticstars-secrets
+                  key: TELEGRAM_BOT_TOKEN
+            - name: TELEGRAM_CHAT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: mysticstars-secrets
+                  key: TELEGRAM_CHAT_ID
+            - name: BLACKBOX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mysticstars-secrets
+                  key: BLACKBOX_API_KEY
+            - name: BLACKBOX_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: mysticstars-config
+                  key: BLACKBOX_MODEL
+            resources:
+              requests:
+                cpu: 50m
+                memory: 64Mi
+              limits:
+                cpu: 150m
+                memory: 128Mi
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+              readOnlyRootFilesystem: false
+              allowPrivilegeEscalation: false
+          restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: weekly-readings-generator
+  namespace: mysticstars
+  labels:
+    app: weekly-readings-generator
+spec:
+  schedule: "0 2 * * 0" # Every Sunday at 2:00 AM
+  timeZone: "UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: weekly-readings-generator
+        spec:
+          containers:
+          - name: reading-generator
+            image: jcowey/mysticstars-cronjob
+            command: ["node"]
+            args: ["scripts/generateReadings.js", "weekly"]
+            env:
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: mysticstars-config
+                  key: NODE_ENV
+            - name: API_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mysticstars-config
+                  key: API_BASE_URL
+            - name: BLACKBOX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mysticstars-secrets
+                  key: BLACKBOX_API_KEY
+            - name: BLACKBOX_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: mysticstars-config
+                  key: BLACKBOX_MODEL
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: 300m
+                memory: 256Mi
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+              readOnlyRootFilesystem: false
+              allowPrivilegeEscalation: false
+          restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: monthly-readings-generator
+  namespace: mysticstars
+  labels:
+    app: monthly-readings-generator
+spec:
+  schedule: "0 3 1 * *" # First day of every month at 3:00 AM
+  timeZone: "UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: monthly-readings-generator
+        spec:
+          containers:
+          - name: reading-generator
+            image: jcowey/mysticstars-cronjob
+            command: ["node"]
+            args: ["scripts/generateReadings.js", "monthly"]
+            env:
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: mysticstars-config
+                  key: NODE_ENV
+            - name: API_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mysticstars-config
+                  key: API_BASE_URL
+            - name: BLACKBOX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mysticstars-secrets
+                  key: BLACKBOX_API_KEY
+            - name: BLACKBOX_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: mysticstars-config
+                  key: BLACKBOX_MODEL
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: 300m
+                memory: 256Mi
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+              readOnlyRootFilesystem: false
+              allowPrivilegeEscalation: false
+          restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: yearly-readings-generator
+  namespace: mysticstars
+  labels:
+    app: yearly-readings-generator
+spec:
+  schedule: "0 4 1 1 *" # January 1st at 4:00 AM
+  timeZone: "UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: yearly-readings-generator
+        spec:
+          containers:
+          - name: reading-generator
+            image: jcowey/mysticstars-cronjob
+            command: ["node"]
+            args: ["scripts/generateReadings.js", "yearly"]
+            env:
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: mysticstars-config
+                  key: NODE_ENV
+            - name: API_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mysticstars-config
+                  key: API_BASE_URL
+            - name: BLACKBOX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mysticstars-secrets
+                  key: BLACKBOX_API_KEY
+            - name: BLACKBOX_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: mysticstars-config
+                  key: BLACKBOX_MODEL
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: 300m
+                memory: 256Mi
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+              readOnlyRootFilesystem: false
+              allowPrivilegeEscalation: false
+          restartPolicy: OnFailure

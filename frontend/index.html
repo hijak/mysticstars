@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MysticStars - Free Daily, Weekly, Monthly & Yearly Horoscope Readings</title>
+    <meta name="description" content="Get your free personalized horoscope readings at MysticStars! Daily, weekly, monthly, and yearly zodiac predictions for all 12 astrological signs. Discover what the stars have in store for you.">
+    <meta name="keywords" content="horoscope, zodiac, astrology, daily horoscope, weekly horoscope, monthly horoscope, yearly horoscope, free horoscope, zodiac signs, astrological predictions, celestial readings">
+    <meta name="author" content="MysticStars">
+    <meta name="robots" content="index, follow">
+    <meta name="googlebot" content="index, follow">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://mysticstars.app/">
+    <meta property="og:title" content="MysticStars - Free Horoscope Readings">
+    <meta property="og:description" content="Get your free personalized horoscope readings! Daily, weekly, monthly, and yearly zodiac predictions for all 12 astrological signs.">
+    <meta property="og:image" content="https://mysticstars.app/og-image.jpg">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://mysticstars.app/">
+    <meta property="twitter:title" content="MysticStars - Free Horoscope Readings">
+    <meta property="twitter:description" content="Get your free personalized horoscope readings! Daily, weekly, monthly, and yearly zodiac predictions.">
+    <meta property="twitter:image" content="https://mysticstars.app/og-image.jpg">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://mysticstars.app/">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    
+
+
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "MysticStars",
+      "url": "https://mysticstars.app",
+      "description": "Free personalized horoscope readings for all zodiac signs",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://mysticstars.app/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "MysticStars",
+        "url": "https://mysticstars.app"
+      }
+    }
+    </script>
+    
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&family=Lugrasimo&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle between light and dark themes" title="Switch theme">
+        <span class="theme-icon">🌙</span>
+        <span class="sr-only">Switch theme</span>
+    </button>
+
+    <!-- Quick Access Panel -->
+    <div class="quick-access-panel" id="quick-access-panel">
+        <button class="quick-access-toggle" id="quick-access-toggle" aria-label="Quick access to zodiac signs">
+            💫
+        </button>
+        <div class="quick-access-content" id="quick-access-content">
+            <h3>Quick Access</h3>
+            <div class="quick-zodiac-grid">
+                <button class="quick-zodiac-btn" data-sign="aries" title="Aries">♈</button>
+                <button class="quick-zodiac-btn" data-sign="taurus" title="Taurus">♉</button>
+                <button class="quick-zodiac-btn" data-sign="gemini" title="Gemini">♊</button>
+                <button class="quick-zodiac-btn" data-sign="cancer" title="Cancer">♋</button>
+                <button class="quick-zodiac-btn" data-sign="leo" title="Leo">♌</button>
+                <button class="quick-zodiac-btn" data-sign="virgo" title="Virgo">♍</button>
+                <button class="quick-zodiac-btn" data-sign="libra" title="Libra">♎</button>
+                <button class="quick-zodiac-btn" data-sign="scorpio" title="Scorpio">♏</button>
+                <button class="quick-zodiac-btn" data-sign="sagittarius" title="Sagittarius">♐</button>
+                <button class="quick-zodiac-btn" data-sign="capricorn" title="Capricorn">♑</button>
+                <button class="quick-zodiac-btn" data-sign="aquarius" title="Aquarius">♒</button>
+                <button class="quick-zodiac-btn" data-sign="pisces" title="Pisces">♓</button>
+            </div>
+            <div class="quick-reading-types">
+                <h4>Reading Types</h4>
+                <div class="quick-reading-grid">
+                    <button class="quick-reading-btn" data-type="daily">🌟 Daily</button>
+                    <button class="quick-reading-btn" data-type="weekly">🌙 Weekly</button>
+                    <button class="quick-reading-btn" data-type="monthly">🔮 Monthly</button>
+                    <button class="quick-reading-btn" data-type="yearly">✨ Yearly</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Navigation Menu -->
+    <button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-label="Toggle navigation menu">
+        <span class="burger-line"></span>
+        <span class="burger-line"></span>
+        <span class="burger-line"></span>
+    </button>
+    
+    <!-- Mobile Navigation Overlay -->
+    <div class="mobile-nav-overlay" id="mobile-nav-overlay">
+        <div class="mobile-nav-content">
+            <button class="mobile-nav-close" id="mobile-nav-close" aria-label="Close menu">×</button>
+            <nav class="mobile-nav-list" role="navigation">
+                <a href="index.html" class="mobile-nav-item" aria-label="Go to homepage">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-text">Home</span>
+                </a>
+                <a href="discover-zodiac.html" class="mobile-nav-item" aria-label="Discover zodiac traits">
+                    <span class="nav-icon">🔮</span>
+                    <span class="nav-text">Discover the Zodiac</span>
+                </a>
+                <a href="about.html" class="mobile-nav-item" aria-label="Learn about us">
+                    <span class="nav-icon">✨</span>
+                    <span class="nav-text">About</span>
+                </a>
+            </nav>
+        </div>
+    </div>
+    <div class="container">
+        <div class="mobile-button-spacer"></div>
+        <header class="header" role="banner">
+            <h1 class="title">✨ MYSTIC STARS ✨</h1>
+            <p class="subtitle">Discover the magic written in the stars...</p>
+            <nav class="header-nav" role="navigation">
+                <ul>
+                    <li><a href="index.html" aria-label="Go to homepage">Home</a></li>
+                    <li><a href="discover-zodiac.html" aria-label="Discover zodiac traits">Discover the Zodiac</a></li>
+                    <li><a href="about.html" aria-label="Learn about us">About</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main class="main" role="main" id="horoscope-readings">
+            <!-- Breadcrumb Navigation -->
+            <nav class="breadcrumb-nav" id="breadcrumb-nav" style="display: none;" aria-label="Breadcrumb">
+                <ol class="breadcrumb-list">
+                    <li class="breadcrumb-item">
+                        <a href="#" class="breadcrumb-link" id="breadcrumb-home">Home</a>
+                    </li>
+                    <li class="breadcrumb-item" id="breadcrumb-sign-item" style="display: none;">
+                        <span class="breadcrumb-separator">›</span>
+                        <a href="#" class="breadcrumb-link" id="breadcrumb-sign"></a>
+                    </li>
+                    <li class="breadcrumb-item" id="breadcrumb-reading-item" style="display: none;">
+                        <span class="breadcrumb-separator">›</span>
+                        <span class="breadcrumb-current" id="breadcrumb-reading"></span>
+                    </li>
+                </ol>
+            </nav>
+
+
+
+            <section class="intro-content">
+                <h2>Free Personalized Horoscope Readings</h2>
+                <p>Welcome to Enchanted Zodiac, your premier destination for accurate and insightful horoscope readings. Our expert astrologers provide personalized daily, weekly, monthly, and yearly predictions based on your zodiac sign. Discover what the celestial movements have in store for your love life, career, health, and personal growth.</p>
+            </section>
+            <section class="zodiac-selection" id="zodiac-signs" aria-labelledby="zodiac-heading">
+                <h2 id="zodiac-heading">Choose Your Celestial Sign</h2>
+                <p>Select your astrological sign below to receive personalized horoscope readings. Each zodiac sign has unique characteristics and cosmic influences that shape your destiny.</p>
+                <div class="zodiac-grid">
+                    <div class="zodiac-card" data-sign="aries">
+                        <div class="zodiac-symbol">♈</div>
+                        <div class="zodiac-name">Aries</div>
+                        <div class="zodiac-dates">Mar 21 - Apr 19</div>
+                        <div class="zodiac-hover-info">
+                            <div class="zodiac-element">🔥 Fire</div>
+                            <div class="zodiac-traits">Bold • Energetic • Leader</div>
+                        </div>
+                    </div>
+                    <div class="zodiac-card" data-sign="taurus">
+                        <div class="zodiac-symbol">♉</div>
+                        <div class="zodiac-name">Taurus</div>
+                        <div class="zodiac-dates">Apr 20 - May 20</div>
+                        <div class="zodiac-hover-info">
+                            <div class="zodiac-element">🌱 Earth</div>
+                            <div class="zodiac-traits">Reliable • Patient • Sensual</div>
+                        </div>
+                    </div>
+                    <div class="zodiac-card" data-sign="gemini">
+                        <div class="zodiac-symbol">♊</div>
+                        <div class="zodiac-name">Gemini</div>
+                        <div class="zodiac-dates">May 21 - Jun 20</div>
+                        <div class="zodiac-hover-info">
+                            <div class="zodiac-element">💨 Air</div>
+                            <div class="zodiac-traits">Curious • Adaptable • Witty</div>
+                        </div>
+                    </div>
+                    <div class="zodiac-card" data-sign="cancer">
+                        <div class="zodiac-symbol">♋</div>
+                        <div class="zodiac-name">Cancer</div>
+                        <div class="zodiac-dates">Jun 21 - Jul 22</div>
+                        <div class="zodiac-hover-info">
+                            <div class="zodiac-element">💧 Water</div>
+                            <div class="zodiac-traits">Nurturing • Intuitive • Protective</div>
+                        </div>
+                    </div>
+                    <div class="zodiac-card" data-sign="leo">
+                        <div class="zodiac-symbol">♌</div>
+                        <div class="zodiac-name">Leo</div>
+                        <div class="zodiac-dates">Jul 23 - Aug 22</div>
+                        <div class="zodiac-hover-info">
+                            <div class="zodiac-element">🔥 Fire</div>
+                            <div class="zodiac-traits">Confident • Generous • Dramatic</div>
+                        </div>
+                    </div>
+                    <div class="zodiac-card" data-sign="virgo">
+                        <div class="zodiac-symbol">♍</div>
+                        <div class="zodiac-name">Virgo</div>
+                        <div class="zodiac-dates">Aug 23 - Sep 22</div>
+                        <div class="zodiac-hover-info">
+                            <div class="zodiac-element">🌱 Earth</div>
+                            <div class="zodiac-traits">Analytical • Helpful • Perfectionist</div>
+                        </div>
+                    </div>
+                    <div class="zodiac-card" data-sign="libra">
+                        <div class="zodiac-symbol">♎</div>
+                        <div class="zodiac-name">Libra</div>
+                        <div class="zodiac-dates">Sep 23 - Oct 22</div>
+                        <div class="zodiac-hover-info">
+                            <div class="zodiac-element">💨 Air</div>
+                            <div class="zodiac-traits">Diplomatic • Charming • Fair</div>
+                        </div>
+                    </div>
+                    <div class="zodiac-card" data-sign="scorpio">
+                        <div class="zodiac-symbol">♏</div>
+                        <div class="zodiac-name">Scorpio</div>
+                        <div class="zodiac-dates">Oct 23 - Nov 21</div>
+                        <div class="zodiac-hover-info">
+                            <div class="zodiac-element">💧 Water</div>
+                            <div class="zodiac-traits">Passionate • Mysterious • Intense</div>
+                        </div>
+                    </div>
+                    <div class="zodiac-card" data-sign="sagittarius">
+                        <div class="zodiac-symbol">♐</div>
+                        <div class="zodiac-name">Sagittarius</div>
+                        <div class="zodiac-dates">Nov 22 - Dec 21</div>
+                        <div class="zodiac-hover-info">
+                            <div class="zodiac-element">🔥 Fire</div>
+                            <div class="zodiac-traits">Adventurous • Optimistic • Free</div>
+                        </div>
+                    </div>
+                    <div class="zodiac-card" data-sign="capricorn">
+                        <div class="zodiac-symbol">♑</div>
+                        <div class="zodiac-name">Capricorn</div>
+                        <div class="zodiac-dates">Dec 22 - Jan 19</div>
+                        <div class="zodiac-hover-info">
+                            <div class="zodiac-element">🌱 Earth</div>
+                            <div class="zodiac-traits">Ambitious • Disciplined • Practical</div>
+                        </div>
+                    </div>
+                    <div class="zodiac-card" data-sign="aquarius">
+                        <div class="zodiac-symbol">♒</div>
+                        <div class="zodiac-name">Aquarius</div>
+                        <div class="zodiac-dates">Jan 20 - Feb 18</div>
+                        <div class="zodiac-hover-info">
+                            <div class="zodiac-element">💨 Air</div>
+                            <div class="zodiac-traits">Independent • Innovative • Humanitarian</div>
+                        </div>
+                    </div>
+                    <div class="zodiac-card" data-sign="pisces">
+                        <div class="zodiac-symbol">♓</div>
+                        <div class="zodiac-name">Pisces</div>
+                        <div class="zodiac-dates">Feb 19 - Mar 20</div>
+                        <div class="zodiac-hover-info">
+                            <div class="zodiac-element">💧 Water</div>
+                            <div class="zodiac-traits">Compassionate • Artistic • Intuitive</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+
+            <section class="reading-type-selection" style="display: none;" aria-labelledby="reading-type-heading">
+                <h2 id="reading-type-heading">Choose Your Magical Reading</h2>
+                <p>Select the type of horoscope reading you'd like to receive. Each reading type offers different insights into your cosmic journey.</p>
+                <div class="reading-types">
+                    <button class="reading-btn" data-type="daily">
+                        <span class="reading-icon">🌟</span>
+                        <span class="reading-title">Daily</span>
+                        <span class="reading-desc">Today's Magic</span>
+                    </button>
+                    <button class="reading-btn" data-type="weekly">
+                        <span class="reading-icon">🌙</span>
+                        <span class="reading-title">Weekly</span>
+                        <span class="reading-desc">Seven Days of Wonder</span>
+                    </button>
+                    <button class="reading-btn" data-type="monthly">
+                        <span class="reading-icon">🔮</span>
+                        <span class="reading-title">Monthly</span>
+                        <span class="reading-desc">A Month of Miracles</span>
+                    </button>
+                    <button class="reading-btn" data-type="yearly">
+                        <span class="reading-icon">✨</span>
+                        <span class="reading-title">Yearly</span>
+                        <span class="reading-desc">Annual Awakening</span>
+                    </button>
+                </div>
+            </section>
+
+            <section class="reading-display" style="display: none;" aria-labelledby="reading-title">
+                <div class="reading-header">
+                    <h2 id="reading-title"></h2>
+                    <button class="back-btn">← Back to Selection</button>
+                </div>
+                <div class="reading-content">
+                    <div class="loading" id="loading">
+                        <div class="crystal-loader">🔮</div>
+                        <p>Consulting the celestial energies...</p>
+                    </div>
+                    <div class="reading-text" id="reading-text" style="display: none;"></div>
+                </div>
+            </section>
+
+
+
+        </main>
+
+        <footer class="footer" role="contentinfo">
+            <div class="footer-content">
+                <section class="footer-section" id="about">
+                    <h3>About MysticStars</h3>
+                    <p>MysticStars provides free, accurate horoscope readings for all zodiac signs. Our mission is to help you understand your cosmic potential and navigate life's journey with celestial wisdom.</p>
+                </section>
+                <section class="footer-section">
+                    <h3>Horoscope Services</h3>
+                    <ul>
+                        <li>Daily Horoscopes</li>
+                        <li>Weekly Predictions</li>
+                        <li>Monthly Forecasts</li>
+                        <li>Yearly Overviews</li>
+                    </ul>
+                </section>
+                <section class="footer-section">
+                    <h3>Zodiac Signs</h3>
+                    <ul>
+                        <li>Aries, Taurus, Gemini</li>
+                        <li>Cancer, Leo, Virgo</li>
+                        <li>Libra, Scorpio, Sagittarius</li>
+                        <li>Capricorn, Aquarius, Pisces</li>
+                    </ul>
+                </section>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 MysticStars - Where magic meets destiny</p>
+                <p><a href="privacy-policy.html">Privacy Policy</a> | <a href="terms-of-service.html">Terms of Service</a> | <a href="contact.html">Contact</a></p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

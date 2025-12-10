@@ -1,0 +1,23 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://enchantedzodiac.com/sitemap.xml
+
+# Important pages
+Allow: /index.html
+Allow: /style.css
+Allow: /script.js
+
+# Block unnecessary files
+Disallow: /admin/
+Disallow: /private/
+Disallow: /*.log$
+
+# Allow search engines to crawl images and CSS
+Allow: /*.css$
+Allow: /*.js$
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.gif$
+Allow: /*.svg$

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysticstars-config
+  namespace: mysticstars
+data:
+  NODE_ENV: "production"
+  PORT: "3000"
+  POSTGRES_URI: "postgresql://psql:60w6cT1Ufh@psql-postgresql.psql:5432/mysticstars"
+  API_BASE_URL: "http://mysticstars-api:3000"
+  FRONTEND_URL: "https://mysticstars.pages.dev"
+  LOG_LEVEL: "info"
+  # Blackbox AI configuration
+  BLACKBOX_MODEL: "blackboxai/deepseek/deepseek-r1:free"
