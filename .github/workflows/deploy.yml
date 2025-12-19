@@ -210,26 +210,20 @@ jobs:
       run: |
         export KUBECONFIG=kubeconfig
 
-        # Create database credentials secret in myst-db namespace
-        # Create updated database credentials file
-        cat > k8s/database/database-credentials-updated.yaml << EOF
-apiVersion: v1
-kind: Secret
-metadata:
-  name: postgres-credentials
-  namespace: myst-db
-type: Opaque
-data:
-  username: bXlzdGljc3RhcnM=  # mysticstars
-  password: $(echo -n "$DB_PASSWORD" | base64)
-  dbname: bXlzdGljc3RhcnM=  # mysticstars
-  # Additional fields for backup configuration
-  AWS_ACCESS_KEY_ID: $(echo -n "$AWS_ACCESS_KEY_ID" | base64)
-  AWS_SECRET_ACCESS_KEY: $(echo -n "$AWS_SECRET_ACCESS_KEY" | base64)
-EOF
+        # Base64 encode the values
+        DB_PASSWORD_B64=$(echo -n "$DB_PASSWORD" | base64)
+        AWS_ACCESS_KEY_ID_B64=$(echo -n "$AWS_ACCESS_KEY_ID" | base64)
+        AWS_SECRET_ACCESS_KEY_B64=$(echo -n "$AWS_SECRET_ACCESS_KEY" | base64)
 
-        # Apply database credentials
-        kubectl apply -f k8s/database/database-credentials-updated.yaml
+        # Create database credentials secret in myst-db namespace using kubectl
+        kubectl create secret generic postgres-credentials \
+          --from-literal=username=mysticstars \
+          --from-literal=password="$DB_PASSWORD" \
+          --from-literal=dbname=mysticstars \
+          --from-literal=AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
+          --from-literal=AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
+          --namespace=myst-db \
+          --dry-run=client -o yaml | kubectl apply -f -
 
         # Create application secrets in myst-prod namespace
         # Generate new database connection string
