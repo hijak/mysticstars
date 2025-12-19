@@ -22,8 +22,8 @@ jobs:
       contents: read
       packages: write
     outputs:
-      image-api: ${{ steps.meta-api.outputs.tags }}
-      image-cronjob: ${{ steps.meta-cronjob.outputs.tags }}
+      image-api: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_API }}
+      image-cronjob: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_CRONJOB }}
       digest-api: ${{ steps.build-api.outputs.digest }}
       digest-cronjob: ${{ steps.build-cronjob.outputs.digest }}
     steps:
@@ -86,10 +86,18 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
+    - name: Extract tag for Trivy scan - API
+      id: tag-api
+      run: |
+        # Get the tag with commit SHA
+        TAG=$(echo "${{ steps.meta-api.outputs.tags }}" | grep "main-" | head -n1)
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        echo "Using tag: $TAG"
+
     - name: Run Trivy vulnerability scanner on API image
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: ${{ needs.build.outputs.image-api }}@${{ needs.build.outputs.digest-api }}
+        image-ref: ${{ needs.build.outputs.image-api }}:${{ steps.tag-api.outputs.tag }}
         format: 'sarif'
         output: 'trivy-results-api.sarif'
 
@@ -98,10 +106,18 @@ jobs:
       with:
         sarif_file: 'trivy-results-api.sarif'
 
+    - name: Extract tag for Trivy scan - CronJob
+      id: tag-cronjob
+      run: |
+        # Get the tag with commit SHA
+        TAG=$(echo "${{ steps.meta-cronjob.outputs.tags }}" | grep "main-" | head -n1)
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        echo "Using tag: $TAG"
+
     - name: Run Trivy vulnerability scanner on CronJob image
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: ${{ needs.build.outputs.image-cronjob }}@${{ needs.build.outputs.digest-cronjob }}
+        image-ref: ${{ needs.build.outputs.image-cronjob }}:${{ steps.tag-cronjob.outputs.tag }}
         format: 'sarif'
         output: 'trivy-results-cronjob.sarif'
 
