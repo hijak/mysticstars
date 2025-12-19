@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mysticstars-api
-  namespace: mysticstars
+  namespace: mysticstars  # This will be replaced with myst-prod during deployment
   labels:
     app: mysticstars-api
     version: v1.0.0
@@ -88,7 +88,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mysticstars-api
-  namespace: mysticstars
+  namespace: mysticstars  # This will be replaced with myst-prod during deployment
   labels:
     app: mysticstars-api
 spec:

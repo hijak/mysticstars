@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: daily-readings-generator
-  namespace: mysticstars
+  namespace: mysticstars  # This will be replaced with myst-prod during deployment
   labels:
     app: daily-readings-generator
 spec:
@@ -62,7 +62,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: readings-monitor
-  namespace: mysticstars
+  namespace: mysticstars  # This will be replaced with myst-prod during deployment
   labels:
     app: readings-monitor
 spec:
@@ -133,7 +133,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: weekly-readings-generator
-  namespace: mysticstars
+  namespace: mysticstars  # This will be replaced with myst-prod during deployment
   labels:
     app: weekly-readings-generator
 spec:
@@ -193,7 +193,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: monthly-readings-generator
-  namespace: mysticstars
+  namespace: mysticstars  # This will be replaced with myst-prod during deployment
   labels:
     app: monthly-readings-generator
 spec:
@@ -253,7 +253,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: yearly-readings-generator
-  namespace: mysticstars
+  namespace: mysticstars  # This will be replaced with myst-prod during deployment
   labels:
     app: yearly-readings-generator
 spec:

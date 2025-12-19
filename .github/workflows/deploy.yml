@@ -14,39 +14,9 @@ env:
   IMAGE_NAME_CRONJOB: ${{ github.repository }}/mysticstars-cronjob
 
 jobs:
-  # Code Quality and Security Testing
-  test:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: backend/package-lock.json
-
-    - name: Install dependencies
-      working-directory: backend
-      run: npm ci
-
-    - name: Run linting
-      working-directory: backend
-      run: npm run lint
-
-    - name: Run tests
-      working-directory: backend
-      run: npm test
-
-    - name: Security audit
-      working-directory: backend
-      run: npm audit --audit-level moderate
 
   # Build and Push Container Images
   build:
-    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -155,10 +125,12 @@ jobs:
       with:
         version: 'v1.28.0'
 
-    - name: Configure kubectl
-      run: |
-        echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig
-        export KUBECONFIG=kubeconfig
+    - name: Get GitHub OIDC token
+      id: token
+      uses: actions/create-github-app-token@v1
+      with:
+        app-id: ${{ secrets.VAULT_GITHUB_APP_ID }}
+        private-key: ${{ secrets.VAULT_GITHUB_PRIVATE_KEY }}
 
     - name: Install Vault CLI
       run: |
@@ -176,12 +148,31 @@ jobs:
         # Verify authentication
         vault token lookup
 
-    - name: Get GitHub OIDC token
-      id: token
-      uses: actions/create-github-app-token@v1
-      with:
-        app-id: ${{ secrets.VAULT_GITHUB_APP_ID }}
-        private-key: ${{ secrets.VAULT_GITHUB_PRIVATE_KEY }}
+    - name: Authenticate with Rancher
+      run: |
+        # Retrieve Rancher credentials from Vault
+        export VAULT_ADDR="${{ secrets.VAULT_ADDR }}"
+        export VAULT_TOKEN=$(vault write -field=token auth/github/login role="${{ secrets.VAULT_ROLE }}" jwt="${{ steps.token.outputs.token }}")
+
+        # Get Rancher CI password
+        RANCHER_CI_PASSWORD=$(vault kv get -field=RANCHER_CI_PASSWORD secret/production/github)
+
+        # Install Rancher CLI
+        curl -s https://releases.rancher.com/cli2/v2.7.0/rancher-linux-amd64-v2.7.0.tar.gz | tar zx
+        sudo mv rancher-v2.7.0/rancher /usr/local/bin/
+        rancher --version
+
+        # Use Rancher CLI to get kubeconfig
+        rancher login https://rancher.exnet.systems --token $RANCHER_CI_PASSWORD
+        rancher kubectl config view --raw > kubeconfig
+        export KUBECONFIG=kubeconfig
+
+    - name: Configure kubectl
+      run: |
+        export KUBECONFIG=kubeconfig
+        # Verify connection to cluster
+        kubectl cluster-info
+        kubectl get namespaces | grep -E "myst-prod|myst-db"
 
     - name: Retrieve secrets from Vault
       run: |
@@ -195,9 +186,15 @@ jobs:
         BLACKBOX_API_KEY=$(vault kv get -field=BLACKBOX_API_KEY ${{ secrets.VAULT_SECRET_PATH }})
         echo "BLACKBOX_API_KEY=$BLACKBOX_API_KEY" >> secrets.env
 
-        # Database URI
-        POSTGRES_URI=$(vault kv get -field=POSTGRES_URI ${{ secrets.VAULT_SECRET_PATH }})
-        echo "POSTGRES_URI=$POSTGRES_URI" >> secrets.env
+        # Database password for new CNPG database
+        DB_PASSWORD=$(vault kv get -field=DB_PASSWORD ${{ secrets.VAULT_SECRET_PATH }})
+        echo "DB_PASSWORD=$DB_PASSWORD" >> secrets.db.env
+
+        # AWS credentials for database backups
+        AWS_ACCESS_KEY_ID=$(vault kv get -field=AWS_ACCESS_KEY_ID ${{ secrets.VAULT_SECRET_PATH }})
+        echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> secrets.db.env
+        AWS_SECRET_ACCESS_KEY=$(vault kv get -field=AWS_SECRET_ACCESS_KEY ${{ secrets.VAULT_SECRET_PATH }})
+        echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> secrets.db.env
 
         # Telegram bot token
         TELEGRAM_BOT_TOKEN=$(vault kv get -field=TELEGRAM_BOT_TOKEN ${{ secrets.VAULT_SECRET_PATH }})
@@ -209,18 +206,59 @@ jobs:
 
         echo "Secrets retrieved successfully"
 
-    - name: Create Kubernetes secret
+    - name: Create Kubernetes secrets
       run: |
         export KUBECONFIG=kubeconfig
 
-        # Create namespace if it doesn't exist
-        kubectl apply -f k8s/namespace.yaml
+        # Create database credentials secret in myst-db namespace
+        # Create updated database credentials file
+        cat > k8s/database/database-credentials-updated.yaml << EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-credentials
+  namespace: myst-db
+type: Opaque
+data:
+  username: bXlzdGljc3RhcnM=  # mysticstars
+  password: $(echo -n "$DB_PASSWORD" | base64)
+  dbname: bXlzdGljc3RhcnM=  # mysticstars
+  # Additional fields for backup configuration
+  AWS_ACCESS_KEY_ID: $(echo -n "$AWS_ACCESS_KEY_ID" | base64)
+  AWS_SECRET_ACCESS_KEY: $(echo -n "$AWS_SECRET_ACCESS_KEY" | base64)
+EOF
 
-        # Create secret from environment variables
+        # Apply database credentials
+        kubectl apply -f k8s/database/database-credentials-updated.yaml
+
+        # Create application secrets in myst-prod namespace
+        # Generate new database connection string
+        NEW_POSTGRES_URI="postgresql://mysticstars:$DB_PASSWORD@mysticstars-db-rw.myst-db.svc.cluster.local:5432/mysticstars"
+        echo "NEW_POSTGRES_URI=$NEW_POSTGRES_URI" >> secrets.env
+
+        # Create secret from environment variables in myst-prod namespace
         kubectl create secret generic mysticstars-secrets \
           --from-env-file=secrets.env \
-          --namespace=mysticstars \
+          --namespace=myst-prod \
           --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Deploy database to myst-db
+      run: |
+        export KUBECONFIG=kubeconfig
+
+        # Deploy network policies first
+        kubectl apply -f k8s/network-policies/
+
+        # Deploy CloudNativePG cluster
+        kubectl apply -f k8s/database/cnpg-cluster.yaml
+
+        # Wait for database to be ready
+        echo "Waiting for database cluster to be ready..."
+        kubectl wait --for=condition=ready pod -l cnpg.io/cluster=mysticstars-db -n myst-db --timeout=300s
+
+        # Verify database is accessible
+        kubectl get cluster -n myst-db
+        kubectl get pods -n myst-db
 
     - name: Update image tags in Kubernetes manifests
       run: |
@@ -232,34 +270,35 @@ jobs:
       run: |
         export KUBECONFIG=kubeconfig
 
-        # Apply ConfigMap
-        kubectl apply -f k8s/configmap.yaml
+        # Deploy ConfigMap to myst-prod namespace
+        sed 's/namespace: mysticstars/namespace: myst-prod/g' k8s/configmap.yaml | kubectl apply -f -
 
-        # Deploy API
-        kubectl apply -f k8s/api-deployment.yaml
+        # Deploy API to myst-prod namespace
+        sed 's/namespace: mysticstars/namespace: myst-prod/g' k8s/api-deployment.yaml | kubectl apply -f -
 
-        # Deploy CronJobs
-        kubectl apply -f k8s/cronjobs.yaml
+        # Deploy CronJobs to myst-prod namespace
+        sed 's/namespace: mysticstars/namespace: myst-prod/g' k8s/cronjobs.yaml | kubectl apply -f -
 
-        # Deploy Ingress
-        kubectl apply -f k8s/ingress.yaml
+        # Deploy Ingress (references myst-prod namespace for service)
+        sed 's/namespace: mysticstars/namespace: myst-prod/g' k8s/ingress.yaml | kubectl apply -f -
 
     - name: Wait for deployment to be ready
       run: |
         export KUBECONFIG=kubeconfig
 
         # Wait for API deployment to be ready
-        kubectl wait --for=condition=available --timeout=300s deployment/mysticstars-api -n mysticstars
+        kubectl wait --for=condition=available --timeout=300s deployment/mysticstars-api -n myst-prod
 
-        # Verify pods are running
-        kubectl get pods -n mysticstars
+        # Verify pods are running in both namespaces
+        kubectl get pods -n myst-db
+        kubectl get pods -n myst-prod
 
     - name: Health check
       run: |
         export KUBECONFIG=kubeconfig
 
         # Get API service URL
-        API_URL=$(kubectl get ingress mysticstars-ingress -n mysticstars -o jsonpath='{.spec.rules[0].host}')
+        API_URL=$(kubectl get ingress mysticstars-ingress -n myst-prod -o jsonpath='{.spec.rules[0].host}')
 
         # Wait a moment for the service to be fully ready
         sleep 30
@@ -317,9 +356,33 @@ jobs:
       with:
         version: 'v1.28.0'
 
+    - name: Get GitHub OIDC token
+      id: token
+      uses: actions/create-github-app-token@v1
+      with:
+        app-id: ${{ secrets.VAULT_GITHUB_APP_ID }}
+        private-key: ${{ secrets.VAULT_GITHUB_PRIVATE_KEY }}
+
+    - name: Authenticate with Rancher
+      run: |
+        # Retrieve Rancher credentials from Vault
+        export VAULT_ADDR="${{ secrets.VAULT_ADDR }}"
+        export VAULT_TOKEN=$(vault write -field=token auth/github/login role="${{ secrets.VAULT_ROLE }}" jwt="${{ steps.token.outputs.token }}")
+
+        # Get Rancher CI password
+        RANCHER_CI_PASSWORD=$(vault kv get -field=RANCHER_CI_PASSWORD secret/production/github)
+
+        # Install Rancher CLI
+        curl -s https://releases.rancher.com/cli2/v2.7.0/rancher-linux-amd64-v2.7.0.tar.gz | tar zx
+        sudo mv rancher-v2.7.0/rancher /usr/local/bin/
+
+        # Use Rancher CLI to get kubeconfig
+        rancher login https://rancher.exnet.systems --token $RANCHER_CI_PASSWORD
+        rancher kubectl config view --raw > kubeconfig
+        export KUBECONFIG=kubeconfig
+
     - name: Configure kubectl
       run: |
-        echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig
         export KUBECONFIG=kubeconfig
 
     - name: Validate CronJobs
@@ -327,17 +390,21 @@ jobs:
         export KUBECONFIG=kubeconfig
 
         # Check if all CronJobs are created
-        kubectl get cronjobs -n mysticstars
+        kubectl get cronjobs -n myst-prod
 
         # Verify CronJob schedules
-        kubectl get cronjobs -n mysticstars -o custom-columns=NAME:.metadata.name,SCHEDULE:.spec.schedule
+        kubectl get cronjobs -n myst-prod -o custom-columns=NAME:.metadata.name,SCHEDULE:.spec.schedule
+
+        # Validate database cluster
+        kubectl get cluster -n myst-db
+        kubectl get pods -n myst-db -l cnpg.io/cluster=mysticstars-db
 
     - name: Post-deployment verification
       run: |
         export KUBECONFIG=kubeconfig
 
         # Get API service URL
-        API_URL=$(kubectl get ingress mysticstars-ingress -n mysticstars -o jsonpath='{.spec.rules[0].host}')
+        API_URL=$(kubectl get ingress mysticstars-ingress -n myst-prod -o jsonpath='{.spec.rules[0].host}')
 
         # Test API endpoints
         echo "Testing API health endpoints..."

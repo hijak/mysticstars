@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: mysticstars
-  labels:
-    app: mysticstars
-    version: v1.0.0

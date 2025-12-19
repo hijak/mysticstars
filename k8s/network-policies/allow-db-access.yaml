@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-db-access
+  namespace: myst-db
+  labels:
+    app: mysticstars-db
+    project: mysticstars
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: mysticstars-db
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: myst-prod
+    ports:
+    - protocol: TCP
+      port: 5432
+  # Allow pods within the same namespace to communicate
+  - from:
+    - podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 5432

@@ -1,0 +1,62 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: mysticstars-db
+  namespace: myst-db
+  labels:
+    app: mysticstars-db
+    project: mysticstars
+spec:
+  instances: 1  # Single replica as requested
+  primaryUpdateStrategy: unsupervised
+
+  postgresql:
+    parameters:
+      max_connections: "200"
+      shared_buffers: "256MB"
+      effective_cache_size: "1GB"
+      work_mem: "4MB"
+      maintenance_work_mem: "64MB"
+      checkpoint_completion_target: "0.9"
+      wal_buffers: "16MB"
+      default_statistics_target: "100"
+
+  bootstrap:
+    initdb:
+      database: mysticstars
+      owner: mysticstars
+      secret:
+        name: postgres-credentials
+
+  storage:
+    size: 20Gi
+    # Note: Adjust storageClass based on what's available in your Rancher cluster
+    storageClass: fast-ssd  # This should be updated to match your cluster's storage class
+
+  monitoring:
+    enabled: true
+
+  backup:
+    retentionPolicy: "30d"
+    barmanObjectStore:
+      destinationPath: "s3://mysticstars-db-backups"
+      s3Credentials:
+        accessKeyId:
+          name: postgres-credentials
+          key: AWS_ACCESS_KEY_ID
+        secretAccessKey:
+          name: postgres-credentials
+          key: AWS_SECRET_ACCESS_KEY
+      wal:
+        compression: gzip
+
+  # Enable external connectivity (optional, for external backups/tools)
+  # externalClusters:
+  #   - name: mysticstars-db-external
+  #     connectionParameters:
+  #       host: mysticstars-db-rw.myst-db.svc.cluster.local
+  #       user: mysticstars
+  #       dbname: mysticstars
+  #     password:
+  #       name: postgres-credentials
+  #       key: password
