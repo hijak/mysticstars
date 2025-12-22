@@ -105,6 +105,15 @@ jobs:
       with:
         version: 'v1.28.0'
 
+    - name: Debug Secrets
+      run: |
+        echo "Checking secret presence..."
+        if [ -n "${{ secrets.VAULT_GITHUB_APP_ID }}" ]; then
+          echo "VAULT_GITHUB_APP_ID is present."
+        else
+          echo "VAULT_GITHUB_APP_ID is MISSING or EMPTY."
+        fi
+
     - name: Get GitHub OIDC token
       id: token
       uses: actions/create-github-app-token@v1
@@ -333,6 +342,15 @@ jobs:
       uses: azure/setup-kubectl@v3
       with:
         version: 'v1.28.0'
+
+    - name: Debug Secrets
+      run: |
+        echo "Checking secret presence..."
+        if [ -n "${{ secrets.VAULT_GITHUB_APP_ID }}" ]; then
+          echo "VAULT_GITHUB_APP_ID is present."
+        else
+          echo "VAULT_GITHUB_APP_ID is MISSING or EMPTY."
+        fi
 
     - name: Get GitHub OIDC token
       id: token
