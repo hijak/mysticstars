@@ -109,16 +109,18 @@ jobs:
       run: |
         echo "Checking secret presence..."
         if [ -n "${{ secrets.VAULT_GITHUB_APP_ID }}" ]; then
-          echo "VAULT_GITHUB_APP_ID is present."
+          echo "VAULT_GITHUB_APP_ID found in SECRETS."
+        elif [ -n "${{ vars.VAULT_GITHUB_APP_ID }}" ]; then
+          echo "VAULT_GITHUB_APP_ID found in VARS."
         else
-          echo "VAULT_GITHUB_APP_ID is MISSING or EMPTY."
+          echo "VAULT_GITHUB_APP_ID is MISSING or EMPTY in both secrets and vars."
         fi
 
     - name: Get GitHub OIDC token
       id: token
       uses: actions/create-github-app-token@v1
       with:
-        app-id: ${{ secrets.VAULT_GITHUB_APP_ID }}
+        app-id: ${{ secrets.VAULT_GITHUB_APP_ID || vars.VAULT_GITHUB_APP_ID }}
         private-key: ${{ secrets.VAULT_GITHUB_PRIVATE_KEY }}
 
     - name: Install Vault CLI
@@ -347,16 +349,18 @@ jobs:
       run: |
         echo "Checking secret presence..."
         if [ -n "${{ secrets.VAULT_GITHUB_APP_ID }}" ]; then
-          echo "VAULT_GITHUB_APP_ID is present."
+          echo "VAULT_GITHUB_APP_ID found in SECRETS."
+        elif [ -n "${{ vars.VAULT_GITHUB_APP_ID }}" ]; then
+          echo "VAULT_GITHUB_APP_ID found in VARS."
         else
-          echo "VAULT_GITHUB_APP_ID is MISSING or EMPTY."
+          echo "VAULT_GITHUB_APP_ID is MISSING or EMPTY in both secrets and vars."
         fi
 
     - name: Get GitHub OIDC token
       id: token
       uses: actions/create-github-app-token@v1
       with:
-        app-id: ${{ secrets.VAULT_GITHUB_APP_ID }}
+        app-id: ${{ secrets.VAULT_GITHUB_APP_ID || vars.VAULT_GITHUB_APP_ID }}
         private-key: ${{ secrets.VAULT_GITHUB_PRIVATE_KEY }}
 
     - name: Authenticate with Rancher
