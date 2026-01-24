@@ -21,10 +21,10 @@ export function Header() {
             All Signs
           </Link>
           <Link href="/readings" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            All Readings
+            Readings
           </Link>
-          <Link href="/#daily" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            Daily Reading
+          <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            About
           </Link>
         </nav>
       </div>

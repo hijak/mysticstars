@@ -760,24 +760,37 @@ Your response should start immediately with the horoscope text and contain nothi
       seed = ((seed << 5) - seed) + seedString.charCodeAt(i);
       seed = seed & seed; // Convert to 32-bit integer
     }
+    // Ensure seed is positive
+    seed = Math.abs(seed) || 1;
 
-    // Seeded random function
+    // Seeded random function - always returns 0-1
     const seededRandom = () => {
       seed = (seed * 9301 + 49297) % 233280;
-      return seed / 233280;
+      return Math.abs(seed) / 233280;
     };
 
-    // Lucky Number (1-12)
-    const luckyNumber = Math.floor(seededRandom() * 12) + 1;
+    // Lucky Number (1-99)
+    const luckyNumber = Math.floor(seededRandom() * 99) + 1;
 
     // Lucky Color from predefined palette
     const colors = [
-      'Crimson Red', 'Royal Blue', 'Emerald Green', 'Golden Yellow',
-      'Amethyst Purple', 'Silver Mist', 'Coral Pink', 'Sapphire Blue',
-      'Ruby Red', 'Jade Green', 'Amber Glow', 'Violet Dream',
-      'Midnight Blue', 'Sunset Orange', 'Pearl White', 'Onyx Black'
+      // Reds & Pinks
+      'Crimson Red', 'Ruby Red', 'Coral Pink', 'Rose Quartz', 'Blush Pink', 'Magenta',
+      // Oranges & Yellows
+      'Sunset Orange', 'Tangerine', 'Golden Yellow', 'Amber Glow', 'Honey Gold', 'Lemon Zest',
+      // Greens
+      'Emerald Green', 'Jade Green', 'Forest Green', 'Mint Fresh', 'Sage Green', 'Olive Branch',
+      // Blues
+      'Royal Blue', 'Sapphire Blue', 'Midnight Blue', 'Ocean Teal', 'Sky Blue', 'Turquoise',
+      // Purples
+      'Amethyst Purple', 'Violet Dream', 'Lavender Mist', 'Plum', 'Orchid', 'Indigo Night',
+      // Neutrals & Metallics
+      'Silver Mist', 'Pearl White', 'Onyx Black', 'Champagne Gold', 'Bronze Shimmer', 'Copper Glow',
+      // Earth Tones
+      'Terracotta', 'Mocha Brown', 'Sand Dune', 'Burnt Sienna', 'Dusty Rose', 'Warm Taupe'
     ];
-    const luckyColor = colors[Math.floor(seededRandom() * colors.length)];
+    const colorIndex = Math.floor(seededRandom() * colors.length);
+    const luckyColor = colors[colorIndex] || colors[0]; // Fallback to first color
 
     // Power Hour (6 AM - 10 PM)
     const hour = Math.floor(seededRandom() * 17) + 6; // 6-22
@@ -786,9 +799,9 @@ Your response should start immediately with the horoscope text and contain nothi
     powerHour.setHours(hour, minute, 0, 0);
 
     // Format time as "2:00 PM" or "11:30 AM"
-    const formatTime = (date) => {
-      const hours = date.getHours();
-      const minutes = date.getMinutes();
+    const formatTime = (d) => {
+      const hours = d.getHours();
+      const minutes = d.getMinutes();
       const ampm = hours >= 12 ? 'PM' : 'AM';
       const formattedHours = hours % 12 || 12;
       const formattedMinutes = minutes.toString().padStart(2, '0');
