@@ -23,8 +23,7 @@ services:
     image: ghcr.io/jcowey/mysticstars/api:latest
     container_name: mysticstars-api
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres
     environment:
       NODE_ENV: production
       POSTGRES_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
@@ -45,8 +44,7 @@ services:
     image: ghcr.io/jcowey/mysticstars/frontend:latest
     container_name: mysticstars-frontend
     depends_on:
-      api:
-        condition: service_healthy
+      - api
     environment:
       NODE_ENV: production
     healthcheck:
