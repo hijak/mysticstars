@@ -3,7 +3,6 @@ version: "3.8"
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: mysticstars-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -17,11 +16,15 @@ services:
       retries: 5
     networks:
       - mysticstars-network
-    restart: unless-stopped
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
 
   api:
     image: ghcr.io/jcowey/mysticstars/api:latest
-    container_name: mysticstars-api
     depends_on:
       - postgres
     environment:
@@ -38,11 +41,15 @@ services:
       start_period: 15s
     networks:
       - mysticstars-network
-    restart: unless-stopped
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
 
   frontend:
     image: ghcr.io/jcowey/mysticstars/frontend:latest
-    container_name: mysticstars-frontend
     depends_on:
       - api
     environment:
@@ -55,11 +62,17 @@ services:
       start_period: 15s
     networks:
       - mysticstars-network
-    restart: unless-stopped
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
 
 networks:
   mysticstars-network:
-    driver: bridge
+    driver: overlay
+    attachable: true
 
 volumes:
   postgres_data:
