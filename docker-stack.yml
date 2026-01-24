@@ -64,6 +64,11 @@ services:
         delay: 5s
         max_attempts: 3
 
+networks:
+  default:
+    driver: overlay
+    attachable: true
+
 volumes:
   postgres_data:
     driver: local
