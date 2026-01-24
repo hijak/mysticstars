@@ -22,7 +22,7 @@ services:
         max_attempts: 3
 
   api:
-    image: ghcr.io/jcowey/mysticstars/api:latest
+    image: ghcr.io/hijak/mysticstars/api:latest
     depends_on:
       - postgres
     environment:
@@ -45,7 +45,7 @@ services:
         max_attempts: 3
 
   frontend:
-    image: ghcr.io/jcowey/mysticstars/frontend:latest
+    image: ghcr.io/hijak/mysticstars/frontend:latest
     depends_on:
       - api
     environment:
