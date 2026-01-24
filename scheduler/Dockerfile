@@ -16,11 +16,11 @@ COPY backend/package*.json ./backend/
 
 # Install scheduler dependencies
 WORKDIR /app/scheduler
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Install backend dependencies (for scripts to work)
 WORKDIR /app/backend
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Production stage
 FROM base AS runner
