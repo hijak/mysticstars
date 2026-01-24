@@ -1,0 +1,68 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: mysticstars-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mysticstars-network
+    restart: unless-stopped
+
+  api:
+    image: ghcr.io/jcowey/mysticstars/api:latest
+    container_name: mysticstars-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      POSTGRES_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      BLACKBOX_API_KEY: ${BLACKBOX_API_KEY}
+      API_BASE_URL: http://api:3000
+      FRONTEND_URL: ${FRONTEND_URL}
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health/live', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - mysticstars-network
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/jcowey/mysticstars/frontend:latest
+    container_name: mysticstars-frontend
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - mysticstars-network
+    restart: unless-stopped
+
+networks:
+  mysticstars-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

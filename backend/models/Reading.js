@@ -57,6 +57,9 @@ class Reading extends Model {
 
     switch (this.readingType) {
       case 'daily':
+      case 'love':
+      case 'career':
+      case 'health':
         // Valid until end of next day to allow for timezone differences
         end.setDate(start.getDate() + 2);
         end.setHours(0, 0, 0, 0);
@@ -111,7 +114,7 @@ const initReading = async (sequelize) => {
       }
     },
     readingType: {
-      type: DataTypes.ENUM('daily', 'weekly', 'monthly', 'yearly'),
+      type: DataTypes.ENUM('daily', 'weekly', 'monthly', 'yearly', 'love', 'career', 'health'),
       allowNull: false,
       set(value) {
         this.setDataValue('readingType', value.toLowerCase());
@@ -149,6 +152,15 @@ const initReading = async (sequelize) => {
     generationMetadata: {
       type: DataTypes.JSONB,
       defaultValue: {}
+    },
+    luckyInfluences: {
+      type: DataTypes.JSONB,
+      defaultValue: {
+        number: null,
+        color: null,
+        time: null
+      },
+      comment: 'Lucky number, color, and power hour (generated for daily readings)'
     },
     isActive: {
       type: DataTypes.BOOLEAN,

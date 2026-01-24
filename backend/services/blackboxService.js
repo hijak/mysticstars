@@ -5,7 +5,8 @@ class BlackboxService {
   constructor() {
     this.apiKey = process.env.BLACKBOX_API_KEY;
     if (!this.apiKey) {
-      throw new Error('BLACKBOX_API_KEY environment variable is required');
+      console.warn('BLACKBOX_API_KEY not found. Using MOCK mode.');
+      this.isMock = true;
     }
 
     this.modelDiscovery = new ModelDiscoveryService();
@@ -14,9 +15,11 @@ class BlackboxService {
     // Initialize with environment variable model or fallback to discovery
     // Note: initializeModel is async, so we start it but don't wait here
     this.modelName = process.env.BLACKBOX_MODEL || this.getDefaultFreeModel();
-    this.initializeModel().catch(err => {
-      console.log('[DEBUG] Async model initialization failed:', err.message);
-    });
+    if (!this.isMock) {
+      this.initializeModel().catch(err => {
+        console.log('[DEBUG] Async model initialization failed:', err.message);
+      });
+    }
 
     this.zodiacTraits = {
       aries: "fiery, courageous, pioneering, energetic, and natural leaders",
@@ -102,20 +105,14 @@ class BlackboxService {
     // Prioritized models for horoscope generation (creative, engaging content)
     // Now includes reasoning models since we can extract content from them
     const freeModels = [
-      'blackboxai/deepseek/deepseek-chat-v3-0324:free',         // Strong creative capabilities, direct output
-      'blackboxai/qwen/qwen3-32b:free',                         // Large context, good creativity
-      'blackboxai/mistralai/mistral-small-3.2-24b-instruct:free', // Good instruction following
-      'blackboxai/meta-llama/llama-4-scout:free',               // Latest LLaMA variant
-      'blackboxai/shisa-ai/shisa-v2-llama3.3-70b:free',        // Large model, good for creative tasks
-      'blackboxai/nvidia/llama-3.3-nemotron-super-49b-v1:free', // NVIDIA optimized
-      'blackboxai/qwen/qwen2.5-72b-instruct:free',             // Large instruction-tuned model
-      'blackboxai/google/gemma-3-27b-it:free',                 // Google's creative model
-      'blackboxai/mistralai/mistral-nemo:free',                // Good balance of creativity/accuracy
-      'blackboxai/nousresearch/deephermes-3-llama-3-8b-preview:free', // Fine-tuned for conversations  
-      'blackboxai/rekaai/reka-flash-3:free',                   // Fast and creative
-      'blackboxai/deepseek/deepseek-r1:free'                   // Reasoning model (we can extract content)
+      'blackboxai/meta-llama/llama-4-scout',                   // Verified working (no suffix)
+      'blackboxai/deepseek/deepseek-chat',                       // Try without suffix
+      'blackboxai/meta-llama/llama-3.3-70b-instruct',           // Try without suffix
+      'blackboxai/deepseek/deepseek-r1',                         // Try without suffix
+      'blackboxai/meta-llama/llama-4-scout:free',               // Fallback with suffix
+      'blackboxai/deepseek/deepseek-chat:free',                 // Fallback with suffix
     ];
-    
+
     console.log('[DEBUG] Available horoscope-optimized models (with reasoning extraction):', freeModels);
     return freeModels[0]; // Start with the first one
   }
@@ -166,7 +163,7 @@ class BlackboxService {
     for (const model of freeModels) {
       console.log(`[DEBUG] Trying model: ${model}`);
       this.modelName = model;
-      
+
       // Try each model up to 3 times before moving to the next
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
@@ -181,17 +178,17 @@ class BlackboxService {
         } catch (error) {
           console.log(`  Attempt ${attempt} error: ${error.message}`);
         }
-        
+
         // Wait before retrying (unless it's the last attempt)
         if (attempt < 3) {
           console.log(`  Waiting 2 seconds before retry...`);
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
-      
+
       console.log(`❌ All attempts failed for model: ${model}, moving to next model...`);
     }
-    
+
     return { success: false, error: 'No working free model found' };
   }
 
@@ -199,7 +196,7 @@ class BlackboxService {
     const traits = this.zodiacTraits[zodiacSign.toLowerCase()];
     const timeFrame = this.getTimeFrameDescription(readingType);
     const readingSpecs = this.getReadingSpecifications(readingType);
-    
+
     return `Write an inspiring ${readingType} horoscope reading for ${zodiacSign.charAt(0).toUpperCase() + zodiacSign.slice(1)}.
 
 CRITICAL: Respond with ONLY the final horoscope text. Do NOT include:
@@ -224,6 +221,7 @@ Guidelines:
 - Length: ${readingSpecs.wordCount}
 - Tone: ${readingSpecs.tone}
 - Write in second person (you/your)
+- IMPORTANT: Use paragraph breaks to make the text readable. Do NOT write a single wall of text. For love, career, and health readings, you MUST use a blank line between paragraphs.
 - IMPORTANT: Always end with a complete sentence, never cut off mid-sentence
 
 Your response should start immediately with the horoscope text and contain nothing else.`;
@@ -238,7 +236,7 @@ Your response should start immediately with the horoscope text and contain nothi
           actionItems: 'Suggest one concrete thing the reader can do or focus on today',
           tone: 'Concise, direct, and immediately actionable'
         };
-      
+
       case 'weekly':
         return {
           wordCount: '100-150 words',
@@ -246,7 +244,7 @@ Your response should start immediately with the horoscope text and contain nothi
           actionItems: 'Encourage weekly planning and 2-3 actionable steps they can take this week',
           tone: 'Encouraging and goal-oriented, with a weekly perspective'
         };
-      
+
       case 'monthly':
         return {
           wordCount: '150-200 words',
@@ -254,7 +252,7 @@ Your response should start immediately with the horoscope text and contain nothi
           actionItems: 'Suggest monthly goals, habit formation, or important conversations to have',
           tone: 'Thoughtful and comprehensive, covering multiple life areas'
         };
-      
+
       case 'yearly':
         return {
           wordCount: '200-300 words',
@@ -262,7 +260,31 @@ Your response should start immediately with the horoscope text and contain nothi
           actionItems: 'Encourage big-picture thinking, annual goal setting, and significant life changes',
           tone: 'Comprehensive and transformative, covering major life areas and long-term vision'
         };
-      
+
+      case 'love':
+        return {
+          wordCount: '25-40 words',
+          focus: 'Focus briefly on one key romantic insight or emotional connection',
+          actionItems: 'Use exactly 2 short paragraphs: insight then one actionable tip. Separate them with a blank line (double newline). Never output one continuous block of text.',
+          tone: 'Compassionate and concise'
+        };
+
+      case 'career':
+        return {
+          wordCount: '25-40 words',
+          focus: 'Focus briefly on one professional opportunity or financial tip',
+          actionItems: 'Use exactly 2 short paragraphs: opportunity then one action. Separate them with a blank line (double newline). Never output one continuous block of text.',
+          tone: 'Direct, ambitious, and practical'
+        };
+
+      case 'health':
+        return {
+          wordCount: '25-40 words',
+          focus: 'Focus briefly on one wellness area or mindset',
+          actionItems: 'Use exactly 2 short paragraphs: wellness insight then one simple habit. Separate them with a blank line (double newline). Never output one continuous block of text.',
+          tone: 'Nurturing, clear, and calming'
+        };
+
       default:
         return {
           wordCount: '100-150 words',
@@ -283,6 +305,12 @@ Your response should start immediately with the horoscope text and contain nothi
         return 'the month ahead';
       case 'yearly':
         return 'the year ahead';
+      case 'love':
+        return 'matters of the heart';
+      case 'career':
+        return 'professional and financial matters';
+      case 'health':
+        return 'wellness and self-care';
       default:
         return 'the time ahead';
     }
@@ -298,6 +326,10 @@ Your response should start immediately with the horoscope text and contain nothi
         return 400; // 150-200 words ≈ 200-300 tokens + buffer
       case 'yearly':
         return 600; // 200-300 words ≈ 260-450 tokens + buffer
+      case 'love':
+      case 'career':
+      case 'health':
+        return 120; // 25-40 words ≈ 35-60 tokens + buffer
       default:
         return 400; // Default safe limit
     }
@@ -305,11 +337,11 @@ Your response should start immediately with the horoscope text and contain nothi
 
   async generateReading(zodiacSign, readingType, retries = 3) {
     const startTime = Date.now();
-    
+
     try {
       const prompt = this.generatePrompt(zodiacSign, readingType);
       const maxTokens = this.getMaxTokensForReadingType(readingType);
-      
+
       const requestBody = {
         model: this.modelName,
         messages: [
@@ -345,32 +377,32 @@ Your response should start immediately with the horoscope text and contain nothi
       } catch (parseError) {
         throw new Error(`Failed to parse Blackbox API response: ${parseError.message}`);
       }
-      
+
       // More detailed validation of the response structure
       if (!data) {
         throw new Error('Invalid response format from Blackbox API: empty response');
       }
-      
+
       if (!data.choices) {
         throw new Error(`Invalid response format from Blackbox API: missing choices. Response: ${JSON.stringify(data).substring(0, 200)}`);
       }
-      
+
       if (!Array.isArray(data.choices) || data.choices.length === 0) {
         throw new Error(`Invalid response format from Blackbox API: choices is not an array or empty. Response: ${JSON.stringify(data).substring(0, 200)}`);
       }
-      
+
       if (!data.choices[0]) {
         throw new Error(`Invalid response format from Blackbox API: first choice is undefined`);
       }
-      
+
       if (!data.choices[0].message) {
         throw new Error(`Invalid response format from Blackbox API: message is missing. Choice: ${JSON.stringify(data.choices[0])}`);
       }
-      
+
       // Handle standard responses and reasoning model fallback
       let content = '';
       const message = data.choices[0].message;
-      
+
       if (message.content && message.content.trim()) {
         // Standard response format (preferred)
         content = message.content.trim();
@@ -378,17 +410,17 @@ Your response should start immediately with the horoscope text and contain nothi
         // DeepSeek reasoning model format - extract the actual horoscope content
         console.log(`📝 Model ${this.modelName} returned reasoning format, extracting content...`);
         content = this.extractHoroscopeFromReasoning(message.reasoning_content.trim());
-        
+
         if (!content || content.length < 50) {
           console.log(`⚠️ Could not extract valid horoscope from reasoning content, will try different model`);
           throw new Error('Could not extract valid horoscope content from reasoning format - will try different model');
         }
-        
+
         console.log(`✅ Successfully extracted horoscope content from reasoning format`);
       } else {
         throw new Error(`Invalid response format from Blackbox API: both content and reasoning_content are missing or empty. Message: ${JSON.stringify(message)}`);
       }
-      
+
       if (!content || content.length < 50) {
         throw new Error('Generated content is too short or empty');
       }
@@ -396,18 +428,18 @@ Your response should start immediately with the horoscope text and contain nothi
       // Check if content ends with incomplete sentence (enhanced validation)
       const trimmedContent = content.trim();
       const lastChar = trimmedContent[trimmedContent.length - 1];
-      
+
       // Check for proper sentence endings
       if (!['!', '.', '?'].includes(lastChar)) {
         throw new Error(`Generated content appears incomplete - no proper sentence ending found. Last 50 chars: "${trimmedContent.slice(-50)}"`);
       }
-      
+
       // Additional checks for clearly incomplete content
       const lastSentence = trimmedContent.split(/[.!?]/).pop().trim();
       if (lastSentence.length > 50) { // Very long final segment without punctuation
         throw new Error(`Generated content may be truncated - last segment too long without punctuation. Content: "${trimmedContent.slice(-80)}"`);
       }
-      
+
       // Check for common truncation patterns
       const suspiciousEndings = ['and', 'or', 'but', 'the', 'a', 'an', 'to', 'for', 'with', 'that', 'this'];
       const lastWords = trimmedContent.toLowerCase().split(/\s+/).slice(-2);
@@ -432,13 +464,13 @@ Your response should start immediately with the horoscope text and contain nothi
 
     } catch (error) {
       console.error(`Error generating ${readingType} reading for ${zodiacSign}:`, error);
-      
+
       // Check if it's a network/fetch error
-      if (error.code === 'ECONNRESET' || error.code === 'ENOTFOUND' || 
-          error.message.includes('fetch failed') || error.message.includes('network')) {
+      if (error.code === 'ECONNRESET' || error.code === 'ENOTFOUND' ||
+        error.message.includes('fetch failed') || error.message.includes('network')) {
         console.log('🌐 Network error detected, will retry with backoff');
       }
-      
+
       if (retries > 0) {
         console.log(`Retrying... ${retries} attempts remaining`);
         // Progressive backoff for network errors
@@ -447,7 +479,7 @@ Your response should start immediately with the horoscope text and contain nothi
         await this.delay(backoffDelay);
         return this.generateReading(zodiacSign, readingType, retries - 1);
       }
-      
+
       throw new Error(`Failed to generate reading after multiple attempts: ${error.message}`);
     }
   }
@@ -464,7 +496,7 @@ Your response should start immediately with the horoscope text and contain nothi
         console.log(`  Generating ${type} reading...`);
         const reading = await this.generateReading(zodiacSign, type);
         results[type] = reading;
-        
+
         // Add a small delay between requests to be respectful to the API
         await this.delay(500);
       } catch (error) {
@@ -488,7 +520,7 @@ Your response should start immediately with the horoscope text and contain nothi
         const { results, errors } = await this.generateAllReadingsForSign(sign);
         allResults[sign] = results;
         allErrors.push(...errors.map(e => ({ ...e, sign })));
-        
+
         // Longer delay between signs to avoid rate limiting
         await this.delay(2000);
       } catch (error) {
@@ -513,7 +545,7 @@ Your response should start immediately with the horoscope text and contain nothi
     try {
       // The reasoning content usually contains the final horoscope at the end
       // Look for patterns that indicate the final horoscope text
-      
+
       // Method 1: Look for text after "Here's the horoscope:" or similar patterns
       const patterns = [
         /(?:here'?s? (?:the|your) (?:horoscope|reading)[:\s]*\n*)([\s\S]+?)(?:\n\n|$)/i,
@@ -521,7 +553,7 @@ Your response should start immediately with the horoscope text and contain nothi
         /(?:horoscope (?:text|content)[:\s]*\n*)([\s\S]+?)(?:\n\n|$)/i,
         /(?:reading[:\s]*\n*)([\s\S]+?)(?:\n\n|$)/i
       ];
-      
+
       for (const pattern of patterns) {
         const match = reasoningContent.match(pattern);
         if (match && match[1]) {
@@ -534,7 +566,7 @@ Your response should start immediately with the horoscope text and contain nothi
           }
         }
       }
-      
+
       // Method 2: If no patterns match, take the last substantial paragraph
       const paragraphs = reasoningContent.split(/\n\s*\n/).filter(p => p.trim().length > 50);
       if (paragraphs.length > 0) {
@@ -545,25 +577,25 @@ Your response should start immediately with the horoscope text and contain nothi
           return lastParagraph;
         }
       }
-      
+
       // Method 3: Look for content that starts with "You" (second person)
       const sentences = reasoningContent.split(/[.!?]+/).filter(s => s.trim().length > 20);
       const horoscopeSentences = [];
       let foundHoroscopeStart = false;
-      
+
       for (const sentence of sentences) {
         const trimmed = sentence.trim();
         if (trimmed.toLowerCase().startsWith('you ') || foundHoroscopeStart) {
           foundHoroscopeStart = true;
           horoscopeSentences.push(trimmed);
           // Stop if we hit reasoning text again
-          if (trimmed.toLowerCase().includes('think') || trimmed.toLowerCase().includes('consider') || 
-              trimmed.toLowerCase().includes('reason') || trimmed.toLowerCase().includes('analysis')) {
+          if (trimmed.toLowerCase().includes('think') || trimmed.toLowerCase().includes('consider') ||
+            trimmed.toLowerCase().includes('reason') || trimmed.toLowerCase().includes('analysis')) {
             break;
           }
         }
       }
-      
+
       if (horoscopeSentences.length > 0) {
         let extracted = horoscopeSentences.join('. ').trim();
         if (!extracted.endsWith('.') && !extracted.endsWith('!') && !extracted.endsWith('?')) {
@@ -575,10 +607,10 @@ Your response should start immediately with the horoscope text and contain nothi
           return extracted;
         }
       }
-      
+
       console.log(`[DEBUG] Could not extract valid horoscope content from reasoning format`);
       return null;
-      
+
     } catch (error) {
       console.error('Error extracting horoscope from reasoning content:', error);
       return null;
@@ -588,7 +620,7 @@ Your response should start immediately with the horoscope text and contain nothi
   // Clean extracted content of reasoning artifacts
   cleanExtractedContent(content) {
     let cleaned = content;
-    
+
     // Remove common reasoning prefixes
     const reasoningPrefixes = [
       /^(?:I think|I believe|Let me|I'll|I should|I would|I can|I will)\s+/i,
@@ -596,24 +628,24 @@ Your response should start immediately with the horoscope text and contain nothi
       /^(?:The horoscope|This reading|The reading)\s+(?:should|would|could|might)\s+/i,
       /^(?:Here'?s?|Now)\s+(?:the|your|a)\s+(?:horoscope|reading)[:\s]*/i
     ];
-    
+
     for (const prefix of reasoningPrefixes) {
       cleaned = cleaned.replace(prefix, '');
     }
-    
+
     // Remove reasoning suffixes
     const reasoningSuffixes = [
       /\s*(?:This|That)\s+(?:captures|reflects|embodies)\s+[\s\S]*$/i,
       /\s*(?:I think|I believe)\s+this\s+[\s\S]*$/i
     ];
-    
+
     for (const suffix of reasoningSuffixes) {
       cleaned = cleaned.replace(suffix, '');
     }
-    
+
     // Clean up quotes if the content is wrapped in them
     cleaned = cleaned.replace(/^["']|["']$/g, '');
-    
+
     return cleaned.trim();
   }
 
@@ -621,39 +653,42 @@ Your response should start immediately with the horoscope text and contain nothi
   isValidHoroscope(content) {
     // Basic validation checks
     if (!content || content.length < 50) return false;
-    
+
     // Should be primarily second person (contains "you" or "your")
     const secondPersonCount = (content.toLowerCase().match(/\b(?:you|your|you're|you'll|you've)\b/g) || []).length;
     const wordCount = content.split(/\s+/).length;
-    
+
     // At least 10% second person pronouns
     if (secondPersonCount / wordCount < 0.1) {
       console.log(`[DEBUG] Content doesn't seem to be second person (${secondPersonCount}/${wordCount})`);
       return false;
     }
-    
+
     // Should not contain too much reasoning language
     const reasoningWords = ['think', 'consider', 'analyze', 'because', 'therefore', 'thus', 'reasoning'];
-    const reasoningCount = reasoningWords.reduce((count, word) => 
+    const reasoningCount = reasoningWords.reduce((count, word) =>
       count + (content.toLowerCase().match(new RegExp(`\\b${word}\\b`, 'g')) || []).length, 0);
-    
+
     if (reasoningCount > wordCount * 0.05) { // More than 5% reasoning words
       console.log(`[DEBUG] Content contains too much reasoning language (${reasoningCount}/${wordCount})`);
       return false;
     }
-    
+
     // Should end with proper punctuation
     const lastChar = content.trim().slice(-1);
     if (!['.', '!', '?'].includes(lastChar)) {
       console.log(`[DEBUG] Content doesn't end with proper punctuation: "${lastChar}"`);
       return false;
     }
-    
+
     return true;
   }
 
-  // Test method to verify API connection
   async testConnection() {
+    if (this.isMock) {
+      console.log('[MOCK] Skipping Blackbox API connection test');
+      return { success: true, message: 'Mock mode active', model: 'mock-model' };
+    }
     try {
       const requestBody = {
         model: this.modelName,
@@ -692,19 +727,79 @@ Your response should start immediately with the horoscope text and contain nothi
       }
 
       const data = await response.json();
-      
+
       if (!data.choices || !data.choices[0] || !data.choices[0].message) {
         return { success: false, error: 'Invalid response format' };
       }
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         message: data.choices[0].message.content.trim(),
         model: this.modelName
       };
     } catch (error) {
       return { success: false, error: error.message };
     }
+  }
+
+  /**
+   * Generate lucky influences for a zodiac sign
+   * These are deterministic based on sign + date (seeded random)
+   * @param {string} zodiacSign - The zodiac sign
+   * @param {Date} date - The date to generate influences for (defaults to today)
+   * @returns {Object} Lucky influences with number, color, and time
+   */
+  generateLuckyInfluences(zodiacSign, date = new Date()) {
+    // Create a seed from the zodiac sign and date
+    const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+    const seedString = `${zodiacSign}-${dateStr}`;
+
+    // Simple seeded random number generator
+    let seed = 0;
+    for (let i = 0; i < seedString.length; i++) {
+      seed = ((seed << 5) - seed) + seedString.charCodeAt(i);
+      seed = seed & seed; // Convert to 32-bit integer
+    }
+
+    // Seeded random function
+    const seededRandom = () => {
+      seed = (seed * 9301 + 49297) % 233280;
+      return seed / 233280;
+    };
+
+    // Lucky Number (1-12)
+    const luckyNumber = Math.floor(seededRandom() * 12) + 1;
+
+    // Lucky Color from predefined palette
+    const colors = [
+      'Crimson Red', 'Royal Blue', 'Emerald Green', 'Golden Yellow',
+      'Amethyst Purple', 'Silver Mist', 'Coral Pink', 'Sapphire Blue',
+      'Ruby Red', 'Jade Green', 'Amber Glow', 'Violet Dream',
+      'Midnight Blue', 'Sunset Orange', 'Pearl White', 'Onyx Black'
+    ];
+    const luckyColor = colors[Math.floor(seededRandom() * colors.length)];
+
+    // Power Hour (6 AM - 10 PM)
+    const hour = Math.floor(seededRandom() * 17) + 6; // 6-22
+    const minute = Math.floor(seededRandom() * 4) * 15; // 0, 15, 30, 45
+    const powerHour = new Date(date);
+    powerHour.setHours(hour, minute, 0, 0);
+
+    // Format time as "2:00 PM" or "11:30 AM"
+    const formatTime = (date) => {
+      const hours = date.getHours();
+      const minutes = date.getMinutes();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const formattedHours = hours % 12 || 12;
+      const formattedMinutes = minutes.toString().padStart(2, '0');
+      return `${formattedHours}:${formattedMinutes} ${ampm}`;
+    };
+
+    return {
+      number: luckyNumber,
+      color: luckyColor,
+      time: formatTime(powerHour)
+    };
   }
 }
 

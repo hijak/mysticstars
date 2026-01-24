@@ -1,421 +1,94 @@
-name: Deploy to Kubernetes
+name: Build and Push Container Images
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:
+    branches: [main]
   pull_request:
-    branches: [ main ]
-    types: [opened, synchronize, reopened]
+    branches: [main]
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME_API: ${{ github.repository }}/mysticstars-api
-  IMAGE_NAME_CRONJOB: ${{ github.repository }}/mysticstars-cronjob
+  IMAGE_NAME_API: ${{ github.repository }}/api
+  IMAGE_NAME_FRONTEND: ${{ github.repository }}/frontend
 
 jobs:
-
-  # Build and Push Container Images
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    outputs:
-      image-api: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_API }}
-      image-cronjob: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_CRONJOB }}
-      digest-api: ${{ steps.build-api.outputs.digest }}
-      digest-cronjob: ${{ steps.build-cronjob.outputs.digest }}
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Extract metadata for API image
-      id: meta-api
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_API }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-
-    - name: Build and push API image
-      id: build-api
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./Dockerfile.api
-        push: true
-        tags: ${{ steps.meta-api.outputs.tags }}
-        labels: ${{ steps.meta-api.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-    - name: Extract metadata for CronJob image
-      id: meta-cronjob
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_CRONJOB }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-
-    - name: Build and push CronJob image
-      id: build-cronjob
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./Dockerfile.cronjob
-        push: true
-        tags: ${{ steps.meta-cronjob.outputs.tags }}
-        labels: ${{ steps.meta-cronjob.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-    
-  # Deploy to Kubernetes (only on main branch)
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: production
-    permissions:
-      contents: read
-      id-token: write  # Required for Vault authentication
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup kubectl
-      uses: azure/setup-kubectl@v3
-      with:
-        version: 'v1.28.0'
-
-    - name: Debug Secrets
-      run: |
-        echo "Checking secret presence..."
-        if [ -n "${{ secrets.VAULT_GITHUB_APP_ID }}" ]; then
-          echo "VAULT_GITHUB_APP_ID found in SECRETS."
-        elif [ -n "${{ vars.VAULT_GITHUB_APP_ID }}" ]; then
-          echo "VAULT_GITHUB_APP_ID found in VARS."
-        else
-          echo "VAULT_GITHUB_APP_ID is MISSING or EMPTY in both secrets and vars."
-        fi
-
-    - name: Get GitHub OIDC token
-      id: token
-      uses: actions/create-github-app-token@v1
-      with:
-        app-id: ${{ secrets.VAULT_GITHUB_APP_ID || vars.VAULT_GITHUB_APP_ID }}
-        private-key: ${{ secrets.VAULT_GITHUB_PRIVATE_KEY }}
-
-    - name: Install Vault CLI
-      run: |
-        wget https://releases.hashicorp.com/vault/1.15.0/vault_1.15.0_linux_amd64.zip
-        unzip vault_1.15.0_linux_amd64.zip
-        sudo mv vault /usr/local/bin/
-        vault --version
-
-    - name: Authenticate to Vault with GitHub JWT
-      run: |
-        # Get GitHub OIDC token
-        export VAULT_ADDR="${{ secrets.VAULT_ADDR }}"
-        export VAULT_TOKEN=$(vault write -field=token auth/github/login role="${{ secrets.VAULT_ROLE }}" jwt="${{ steps.token.outputs.token }}")
-
-        # Verify authentication
-        vault token lookup
-
-    - name: Authenticate with Rancher
-      run: |
-        # Retrieve Rancher credentials from Vault
-        export VAULT_ADDR="${{ secrets.VAULT_ADDR }}"
-        export VAULT_TOKEN=$(vault write -field=token auth/github/login role="${{ secrets.VAULT_ROLE }}" jwt="${{ steps.token.outputs.token }}")
-
-        # Get Rancher CI password
-        RANCHER_CI_PASSWORD=$(vault kv get -field=RANCHER_CI_PASSWORD secret/production/github)
-
-        # Install Rancher CLI
-        curl -s https://releases.rancher.com/cli2/v2.7.0/rancher-linux-amd64-v2.7.0.tar.gz | tar zx
-        sudo mv rancher-v2.7.0/rancher /usr/local/bin/
-        rancher --version
-
-        # Use Rancher CLI to get kubeconfig
-        rancher login https://rancher.exnet.systems --token $RANCHER_CI_PASSWORD
-        rancher kubectl config view --raw > kubeconfig
-        export KUBECONFIG=kubeconfig
-
-    - name: Configure kubectl
-      run: |
-        export KUBECONFIG=kubeconfig
-        # Verify connection to cluster
-        kubectl cluster-info
-        kubectl get namespaces | grep -E "myst-prod|myst-db"
-
-    - name: Retrieve secrets from Vault
-      run: |
-        export VAULT_ADDR="${{ secrets.VAULT_ADDR }}"
-        export VAULT_TOKEN=$(vault write -field=token auth/github/login role="${{ secrets.VAULT_ROLE }}" jwt="${{ steps.token.outputs.token }}")
-
-        # Retrieve secrets from KV v1 store
-        echo "Retrieving secrets from Vault..."
-
-        # Blackbox AI API key
-        BLACKBOX_API_KEY=$(vault kv get -field=BLACKBOX_API_KEY ${{ secrets.VAULT_SECRET_PATH }})
-        echo "BLACKBOX_API_KEY=$BLACKBOX_API_KEY" >> secrets.env
-
-        # Database password for new CNPG database
-        DB_PASSWORD=$(vault kv get -field=DB_PASSWORD ${{ secrets.VAULT_SECRET_PATH }})
-        echo "DB_PASSWORD=$DB_PASSWORD" >> secrets.db.env
-
-        # AWS credentials for database backups
-        AWS_ACCESS_KEY_ID=$(vault kv get -field=AWS_ACCESS_KEY_ID ${{ secrets.VAULT_SECRET_PATH }})
-        echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> secrets.db.env
-        AWS_SECRET_ACCESS_KEY=$(vault kv get -field=AWS_SECRET_ACCESS_KEY ${{ secrets.VAULT_SECRET_PATH }})
-        echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> secrets.db.env
-
-        # Telegram bot token
-        TELEGRAM_BOT_TOKEN=$(vault kv get -field=TELEGRAM_BOT_TOKEN ${{ secrets.VAULT_SECRET_PATH }})
-        echo "TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN" >> secrets.env
-
-        # Telegram chat ID
-        TELEGRAM_CHAT_ID=$(vault kv get -field=TELEGRAM_CHAT_ID ${{ secrets.VAULT_SECRET_PATH }})
-        echo "TELEGRAM_CHAT_ID=$TELEGRAM_CHAT_ID" >> secrets.env
-
-        echo "Secrets retrieved successfully"
-
-    - name: Create Kubernetes secrets
-      run: |
-        export KUBECONFIG=kubeconfig
-
-        # Base64 encode the values
-        DB_PASSWORD_B64=$(echo -n "$DB_PASSWORD" | base64)
-        AWS_ACCESS_KEY_ID_B64=$(echo -n "$AWS_ACCESS_KEY_ID" | base64)
-        AWS_SECRET_ACCESS_KEY_B64=$(echo -n "$AWS_SECRET_ACCESS_KEY" | base64)
-
-        # Create database credentials secret in myst-db namespace using kubectl
-        kubectl create secret generic postgres-credentials \
-          --from-literal=username=mysticstars \
-          --from-literal=password="$DB_PASSWORD" \
-          --from-literal=dbname=mysticstars \
-          --from-literal=AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
-          --from-literal=AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
-          --namespace=myst-db \
-          --dry-run=client -o yaml | kubectl apply -f -
-
-        # Create application secrets in myst-prod namespace
-        # Generate new database connection string
-        NEW_POSTGRES_URI="postgresql://mysticstars:$DB_PASSWORD@mysticstars-db-rw.myst-db.svc.cluster.local:5432/mysticstars"
-        echo "NEW_POSTGRES_URI=$NEW_POSTGRES_URI" >> secrets.env
-
-        # Create secret from environment variables in myst-prod namespace
-        kubectl create secret generic mysticstars-secrets \
-          --from-env-file=secrets.env \
-          --namespace=myst-prod \
-          --dry-run=client -o yaml | kubectl apply -f -
-
-    - name: Deploy database to myst-db
-      run: |
-        export KUBECONFIG=kubeconfig
-
-        # Deploy network policies first
-        kubectl apply -f k8s/network-policies/
-
-        # Deploy CloudNativePG cluster
-        kubectl apply -f k8s/database/cnpg-cluster.yaml
-
-        # Wait for database to be ready
-        echo "Waiting for database cluster to be ready..."
-        kubectl wait --for=condition=ready pod -l cnpg.io/cluster=mysticstars-db -n myst-db --timeout=300s
-
-        # Verify database is accessible
-        kubectl get cluster -n myst-db
-        kubectl get pods -n myst-db
-
-    - name: Update image tags in Kubernetes manifests
-      run: |
-        # Update API deployment image
-        sed -i "s|jcowey/mysticstars-api.*|${{ needs.build.outputs.image-api }}|g" k8s/api-deployment.yaml
-        sed -i "s|jcowey/mysticstars-cronjob.*|${{ needs.build.outputs.image-cronjob }}|g" k8s/cronjobs.yaml
-
-    - name: Deploy to Kubernetes
-      run: |
-        export KUBECONFIG=kubeconfig
-
-        # Deploy ConfigMap to myst-prod namespace
-        sed 's/namespace: mysticstars/namespace: myst-prod/g' k8s/configmap.yaml | kubectl apply -f -
-
-        # Deploy API to myst-prod namespace
-        sed 's/namespace: mysticstars/namespace: myst-prod/g' k8s/api-deployment.yaml | kubectl apply -f -
-
-        # Deploy CronJobs to myst-prod namespace
-        sed 's/namespace: mysticstars/namespace: myst-prod/g' k8s/cronjobs.yaml | kubectl apply -f -
-
-        # Deploy Ingress (references myst-prod namespace for service)
-        sed 's/namespace: mysticstars/namespace: myst-prod/g' k8s/ingress.yaml | kubectl apply -f -
-
-    - name: Wait for deployment to be ready
-      run: |
-        export KUBECONFIG=kubeconfig
-
-        # Wait for API deployment to be ready
-        kubectl wait --for=condition=available --timeout=300s deployment/mysticstars-api -n myst-prod
-
-        # Verify pods are running in both namespaces
-        kubectl get pods -n myst-db
-        kubectl get pods -n myst-prod
-
-    - name: Health check
-      run: |
-        export KUBECONFIG=kubeconfig
-
-        # Get API service URL
-        API_URL=$(kubectl get ingress mysticstars-ingress -n myst-prod -o jsonpath='{.spec.rules[0].host}')
-
-        # Wait a moment for the service to be fully ready
-        sleep 30
-
-        # Test health endpoint
-        for i in {1..10}; do
-          if curl -f -s "https://$API_URL/api/health/live"; then
-            echo "Health check passed!"
-            break
-          else
-            echo "Health check attempt $i failed, retrying..."
-            sleep 10
-          fi
-        done
-
-    - name: Send Telegram notification
-      if: always()
-      run: |
-        # Extract secrets for notification
-        source secrets.env
-
-        if [ "${{ job.status }}" == "success" ]; then
-          MESSAGE="✅ *MysticStars Deployment Success*
-
-          🚀 Successfully deployed to production
-          📦 API Image: ${{ needs.build.outputs.image-api }}
-          ⏰ Deployed at: $(date)
-          🌐 Repository: ${{ github.repository }}"
-        else
-          MESSAGE="❌ *MysticStars Deployment Failed*
-
-          🚨 Deployment to production failed
-          📦 API Image: ${{ needs.build.outputs.image-api }}
-          ⏰ Failed at: $(date)
-          🌐 Repository: ${{ github.repository }}
-          🔗 Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-        fi
-
-        # Send to Telegram
-        curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
-          -H "Content-Type: application/json" \
-          -d "{\"chat_id\": \"$TELEGRAM_CHAT_ID\", \"text\": \"$MESSAGE\", \"parse_mode\": \"Markdown\"}"
-
-  # Cleanup and validation
-  validate:
-    needs: [build, deploy]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: production
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup kubectl
-      uses: azure/setup-kubectl@v3
-      with:
-        version: 'v1.28.0'
-
-    - name: Debug Secrets
-      run: |
-        echo "Checking secret presence..."
-        if [ -n "${{ secrets.VAULT_GITHUB_APP_ID }}" ]; then
-          echo "VAULT_GITHUB_APP_ID found in SECRETS."
-        elif [ -n "${{ vars.VAULT_GITHUB_APP_ID }}" ]; then
-          echo "VAULT_GITHUB_APP_ID found in VARS."
-        else
-          echo "VAULT_GITHUB_APP_ID is MISSING or EMPTY in both secrets and vars."
-        fi
-
-    - name: Get GitHub OIDC token
-      id: token
-      uses: actions/create-github-app-token@v1
-      with:
-        app-id: ${{ secrets.VAULT_GITHUB_APP_ID || vars.VAULT_GITHUB_APP_ID }}
-        private-key: ${{ secrets.VAULT_GITHUB_PRIVATE_KEY }}
-
-    - name: Authenticate with Rancher
-      run: |
-        # Retrieve Rancher credentials from Vault
-        export VAULT_ADDR="${{ secrets.VAULT_ADDR }}"
-        export VAULT_TOKEN=$(vault write -field=token auth/github/login role="${{ secrets.VAULT_ROLE }}" jwt="${{ steps.token.outputs.token }}")
-
-        # Get Rancher CI password
-        RANCHER_CI_PASSWORD=$(vault kv get -field=RANCHER_CI_PASSWORD secret/production/github)
-
-        # Install Rancher CLI
-        curl -s https://releases.rancher.com/cli2/v2.7.0/rancher-linux-amd64-v2.7.0.tar.gz | tar zx
-        sudo mv rancher-v2.7.0/rancher /usr/local/bin/
-
-        # Use Rancher CLI to get kubeconfig
-        rancher login https://rancher.exnet.systems --token $RANCHER_CI_PASSWORD
-        rancher kubectl config view --raw > kubeconfig
-        export KUBECONFIG=kubeconfig
-
-    - name: Configure kubectl
-      run: |
-        export KUBECONFIG=kubeconfig
-
-    - name: Validate CronJobs
-      run: |
-        export KUBECONFIG=kubeconfig
-
-        # Check if all CronJobs are created
-        kubectl get cronjobs -n myst-prod
-
-        # Verify CronJob schedules
-        kubectl get cronjobs -n myst-prod -o custom-columns=NAME:.metadata.name,SCHEDULE:.spec.schedule
-
-        # Validate database cluster
-        kubectl get cluster -n myst-db
-        kubectl get pods -n myst-db -l cnpg.io/cluster=mysticstars-db
-
-    - name: Post-deployment verification
-      run: |
-        export KUBECONFIG=kubeconfig
-
-        # Get API service URL
-        API_URL=$(kubectl get ingress mysticstars-ingress -n myst-prod -o jsonpath='{.spec.rules[0].host}')
-
-        # Test API endpoints
-        echo "Testing API health endpoints..."
-
-        # Test liveness
-        curl -f -s "https://$API_URL/api/health/live" || (echo "Liveness check failed" && exit 1)
-
-        # Test readiness
-        curl -f -s "https://$API_URL/api/health/ready" || (echo "Readiness check failed" && exit 1)
-
-        # Test API root
-        curl -f -s "https://$API_URL/api/" || (echo "API root check failed" && exit 1)
-
-        echo "All API health checks passed!"
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # API Image
+      - name: Extract metadata for API image
+        id: meta-api
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_API }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push API image
+        id: build-api
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.api
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta-api.outputs.tags }}
+          labels: ${{ steps.meta-api.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Frontend Image
+      - name: Extract metadata for Frontend image
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Frontend image
+        id: build-frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./new-frontend
+          file: ./new-frontend/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Output image info
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### API Image" >> $GITHUB_STEP_SUMMARY
+          echo "- Tags: ${{ steps.meta-api.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Digest: ${{ steps.build-api.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Frontend Image" >> $GITHUB_STEP_SUMMARY
+          echo "- Tags: ${{ steps.meta-frontend.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Digest: ${{ steps.build-frontend.outputs.digest }}" >> $GITHUB_STEP_SUMMARY

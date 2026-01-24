@@ -10,7 +10,10 @@ const ZODIAC_SIGNS = [
   'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces'
 ];
 
-const READING_TYPES = ['daily', 'weekly', 'monthly', 'yearly'];
+const READING_TYPES = ['daily', 'weekly', 'monthly', 'yearly', 'love', 'career', 'health'];
+
+// Complete reading types to fetch together
+const COMPLETE_READING_TYPES = ['daily', 'love', 'career', 'health'];
 
 // Middleware to validate zodiac sign
 const validateZodiacSign = (req, res, next) => {
@@ -42,16 +45,16 @@ const validateReadingType = (req, res, next) => {
 router.get('/status', async (req, res) => {
   try {
     const now = new Date();
-    
+
     // Get counts for each reading type
     const stats = {};
-    
+
     for (const type of READING_TYPES) {
       stats[type] = {
         total: await Reading.count({ where: { readingType: type } }),
-        active: await Reading.count({ 
+        active: await Reading.count({
           where: {
-            readingType: type, 
+            readingType: type,
             isActive: true,
             validFrom: { [Op.lte]: now },
             validUntil: { [Op.gte]: now }
@@ -72,7 +75,7 @@ router.get('/status', async (req, res) => {
       statistics: stats,
       lastGenerated: lastGenerated?.dateGenerated || null,
       totalReadings: await Reading.count(),
-      activeReadings: await Reading.count({ 
+      activeReadings: await Reading.count({
         where: {
           isActive: true,
           validFrom: { [Op.lte]: now },
@@ -89,13 +92,80 @@ router.get('/status', async (req, res) => {
   }
 });
 
+// GET /api/readings/:sign/complete - Get complete horoscope with daily, love, career, health readings and lucky influences
+router.get('/:sign/complete', validateZodiacSign, async (req, res) => {
+  try {
+    const { sign } = req.params;
+    const now = new Date();
+
+    // Fetch all required reading types
+    const readings = {};
+    const errors = [];
+
+    for (const type of COMPLETE_READING_TYPES) {
+      try {
+        const reading = await Reading.getCurrentReading(sign, type);
+        if (reading) {
+          readings[type] = reading;
+        } else {
+          errors.push(`${type} reading not available`);
+        }
+      } catch (error) {
+        errors.push(`${type} reading error: ${error.message}`);
+      }
+    }
+
+    // Check if we have at least the daily reading
+    if (!readings.daily) {
+      return res.status(404).json({
+        error: 'No current daily reading found',
+        sign,
+        message: `No active daily reading available for ${sign}. Please try again later.`,
+        errors
+      });
+    }
+
+    // Extract lucky influences from daily reading
+    const luckyInfluences = readings.daily.luckyInfluences || {
+      number: null,
+      color: null,
+      time: null
+    };
+
+    // Format response
+    const data = {
+      daily: readings.daily.content || null,
+      love: readings.love?.content || null,
+      career: readings.career?.content || null,
+      health: readings.health?.content || null,
+      lucky: luckyInfluences
+    };
+
+    res.json({
+      success: true,
+      zodiacSign: sign,
+      data,
+      validFrom: readings.daily.validFrom,
+      validUntil: readings.daily.validUntil,
+      generatedAt: readings.daily.dateGenerated,
+      warnings: errors.length > 0 ? errors : undefined
+    });
+  } catch (error) {
+    console.error(`Error fetching complete readings for ${sign}:`, error);
+    res.status(500).json({
+      error: 'Unable to fetch complete readings',
+      message: error.message
+    });
+  }
+});
+
 // GET /api/readings/:sign/:type - Get specific reading
 router.get('/:sign/:type', validateZodiacSign, validateReadingType, async (req, res) => {
   try {
     const { sign, type } = req.params;
-    
+
     const reading = await Reading.getCurrentReading(sign, type);
-    
+
     if (!reading) {
       return res.status(404).json({
         error: 'No current reading found',
@@ -130,9 +200,9 @@ router.get('/:sign/:type', validateZodiacSign, validateReadingType, async (req, 
 router.get('/:sign', validateZodiacSign, async (req, res) => {
   try {
     const { sign } = req.params;
-    
+
     const readings = await Reading.getAllCurrentReadings(sign);
-    
+
     if (Object.keys(readings).length === 0) {
       return res.status(404).json({
         error: 'No current readings found',
@@ -168,10 +238,11 @@ router.get('/:sign', validateZodiacSign, async (req, res) => {
   }
 });
 
+
 // POST /api/readings - Create/update a reading (used by cronjobs)
 router.post('/', async (req, res) => {
   try {
-    const { zodiacSign, readingType, content, validFrom, validUntil, generationMetadata } = req.body;
+    const { zodiacSign, readingType, content, validFrom, validUntil, generationMetadata, luckyInfluences } = req.body;
 
     // Validation
     if (!zodiacSign || !ZODIAC_SIGNS.includes(zodiacSign.toLowerCase())) {
@@ -208,7 +279,8 @@ router.post('/', async (req, res) => {
         zodiacSign: zodiacSign.toLowerCase(),
         readingType: readingType.toLowerCase(),
         content,
-        generationMetadata
+        generationMetadata,
+        luckyInfluences
       };
 
       if (validFrom) readingData.validFrom = new Date(validFrom);

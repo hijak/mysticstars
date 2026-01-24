@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: mysticstars-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mysticstars}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mysticstars_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-mysticstars}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mysticstars}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mysticstars-network
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: mysticstars-api
+    environment:
+      NODE_ENV: development
+      POSTGRES_URI: postgresql://${POSTGRES_USER:-mysticstars}:${POSTGRES_PASSWORD:-mysticstars_pass}@postgres:5432/${POSTGRES_DB:-mysticstars}
+      BLACKBOX_API_KEY: sk-gib8wL1lW_DKhjBgwigalg
+      API_BASE_URL: http://localhost:3000
+      FRONTEND_URL: http://localhost:3001
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - mysticstars-network
+
+  frontend:
+    build:
+      context: ./new-frontend
+      dockerfile: Dockerfile.dev
+    container_name: mysticstars-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./new-frontend:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - api
+    networks:
+      - mysticstars-network
+
+  cronjob:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: mysticstars-cronjob
+    environment:
+      NODE_ENV: development
+      POSTGRES_URI: postgresql://${POSTGRES_USER:-mysticstars}:${POSTGRES_PASSWORD:-mysticstars_pass}@postgres:5432/${POSTGRES_DB:-mysticstars}
+      BLACKBOX_API_KEY: sk-gib8wL1lW_DKhjBgwigalg
+      API_BASE_URL: http://api:3000
+    command: ["node", "scripts/generateReadings.js", "daily"]
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_started
+    networks:
+      - mysticstars-network
+    profiles:
+      - cron
+
+networks:
+  mysticstars-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
