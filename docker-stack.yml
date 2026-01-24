@@ -64,6 +64,55 @@ services:
         delay: 5s
         max_attempts: 3
 
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
+  scheduler:
+    image: ghcr.io/hijak/mysticstars/scheduler:latest
+    depends_on:
+      - redis
+      - api
+    environment:
+      NODE_ENV: production
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      API_BASE_URL: http://api:3000
+      BLACKBOX_API_KEY: ${BLACKBOX_API_KEY}
+      BLACKBOX_MODEL: ${BLACKBOX_MODEL}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+      ADMIN_USER: ${SCHEDULER_ADMIN_USER:-admin}
+      ADMIN_PASSWORD: ${SCHEDULER_ADMIN_PASSWORD}
+      PORT: 3002
+    ports:
+      - "3002:3002"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
 networks:
   default:
     driver: overlay
@@ -71,4 +120,6 @@ networks:
 
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
     driver: local

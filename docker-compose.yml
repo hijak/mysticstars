@@ -84,10 +84,57 @@ services:
     profiles:
       - cron
 
+  redis:
+    image: redis:7-alpine
+    container_name: mysticstars-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mysticstars-network
+    profiles:
+      - scheduler
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: scheduler/Dockerfile
+    container_name: mysticstars-scheduler
+    environment:
+      NODE_ENV: development
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      API_BASE_URL: http://api:3000
+      BLACKBOX_API_KEY: ${BLACKBOX_API_KEY:-sk-gib8wL1lW_DKhjBgwigalg}
+      BLACKBOX_MODEL: ${BLACKBOX_MODEL:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      PORT: 3002
+    ports:
+      - "3002:3002"
+    depends_on:
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_started
+    networks:
+      - mysticstars-network
+    profiles:
+      - scheduler
+
 networks:
   mysticstars-network:
     driver: bridge
 
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
     driver: local
