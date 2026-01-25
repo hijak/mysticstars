@@ -1,10 +1,10 @@
 import { Header } from "@/components/header"
 import { GridBeam } from "@/components/beam-effect"
+import { GlassOrb } from "@/components/glass-orb"
 import { apiClient } from "@/lib/api-client"
 import { zodiacSigns } from "@/lib/zodiac-data"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Link } from "lucide-react"
 import LinkWrapper from "next/link"
 
@@ -147,9 +147,9 @@ export default async function ReadingsPage() {
                           </div>
                         )}
                         {data.lucky.color && (
-                          <div className="text-center">
-                            <p className="text-xs font-medium text-accent">{data.lucky.color}</p>
-                            <p className="text-xs text-muted-foreground">Color</p>
+                          <div className="text-center flex flex-col items-center">
+                            <GlassOrb color={data.lucky.color} size="sm" className="mb-1" />
+                            <p className="text-xs text-muted-foreground">{data.lucky.color}</p>
                           </div>
                         )}
                         {data.lucky.time && (

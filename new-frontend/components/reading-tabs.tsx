@@ -1,9 +1,12 @@
 "use client"
 
 import { useState } from "react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Sparkles, Calendar, CalendarDays, CalendarRange, Heart, Briefcase, Activity, Hash, Palette, Clock } from "lucide-react"
+import { Sparkles, Calendar, CalendarDays, CalendarRange, Heart, Briefcase, Activity, Hash, Clock } from "lucide-react"
+import { GlassOrb } from "@/components/glass-orb"
 
 interface ReadingData {
   content: string
@@ -34,19 +37,48 @@ const tabConfig = [
   { id: "yearly", label: "Yearly", icon: CalendarRange, title: "This Year's Reading" },
 ]
 
-function formatReadingParagraphs(content: string): string[] {
-  const paras = content.split(/\n+/).map((p) => p.trim()).filter(Boolean)
-  if (paras.length > 1) return paras
-  const single = paras[0] ?? content.trim()
-  if (!single) return []
-  if (single.length <= 120) return [single]
-  const sentences = single.split(/(?<=[.!?])\s+/).filter(Boolean)
-  if (sentences.length <= 1) return [single]
-  const result: string[] = []
-  for (let i = 0; i < sentences.length; i += 2) {
-    result.push(sentences.slice(i, i + 2).join(" ").trim())
-  }
-  return result.length ? result : [single]
+// Custom markdown components for styling
+const markdownComponents = {
+  p: ({ children }: { children?: React.ReactNode }) => (
+    <p className="mb-4 last:mb-0">{children}</p>
+  ),
+  strong: ({ children }: { children?: React.ReactNode }) => (
+    <strong className="font-semibold text-foreground">{children}</strong>
+  ),
+  em: ({ children }: { children?: React.ReactNode }) => (
+    <em className="italic text-primary/90">{children}</em>
+  ),
+  ul: ({ children }: { children?: React.ReactNode }) => (
+    <ul className="list-disc list-inside mb-4 space-y-1">{children}</ul>
+  ),
+  ol: ({ children }: { children?: React.ReactNode }) => (
+    <ol className="list-decimal list-inside mb-4 space-y-1">{children}</ol>
+  ),
+  li: ({ children }: { children?: React.ReactNode }) => (
+    <li className="text-foreground/90">{children}</li>
+  ),
+  h1: ({ children }: { children?: React.ReactNode }) => (
+    <h1 className="text-2xl font-bold mb-3 text-foreground">{children}</h1>
+  ),
+  h2: ({ children }: { children?: React.ReactNode }) => (
+    <h2 className="text-xl font-semibold mb-2 text-foreground">{children}</h2>
+  ),
+  h3: ({ children }: { children?: React.ReactNode }) => (
+    <h3 className="text-lg font-semibold mb-2 text-foreground">{children}</h3>
+  ),
+  blockquote: ({ children }: { children?: React.ReactNode }) => (
+    <blockquote className="border-l-4 border-primary/50 pl-4 italic text-muted-foreground mb-4">{children}</blockquote>
+  ),
+}
+
+function MarkdownContent({ content, className = "" }: { content: string; className?: string }) {
+  return (
+    <div className={className}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+        {content}
+      </ReactMarkdown>
+    </div>
+  )
 }
 
 export function ReadingTabs({ readings, love, career, health, lucky }: ReadingTabsProps) {
@@ -93,11 +125,10 @@ export function ReadingTabs({ readings, love, career, health, lucky }: ReadingTa
                 </CardHeader>
                 <CardContent>
                   {reading?.content ? (
-                    <div className="text-foreground/90 leading-relaxed text-lg">
-                      {formatReadingParagraphs(reading.content).map((paragraph, i) => (
-                        <p key={i} className="mb-4 last:mb-0">{paragraph}</p>
-                      ))}
-                    </div>
+                    <MarkdownContent 
+                      content={reading.content} 
+                      className="text-foreground/90 leading-relaxed text-lg prose-headings:text-foreground" 
+                    />
                   ) : (
                     <p className="text-muted-foreground italic">
                       {tab.label} reading not available at this time.
@@ -127,11 +158,10 @@ export function ReadingTabs({ readings, love, career, health, lucky }: ReadingTa
                 </CardHeader>
                 <CardContent>
                   {section.content ? (
-                    <div className="text-sm text-muted-foreground leading-relaxed">
-                      {formatReadingParagraphs(section.content).map((paragraph, i) => (
-                        <p key={i} className="mb-4 last:mb-0">{paragraph}</p>
-                      ))}
-                    </div>
+                    <MarkdownContent 
+                      content={section.content} 
+                      className="text-sm text-muted-foreground leading-relaxed" 
+                    />
                   ) : (
                     <p className="text-sm text-muted-foreground italic">Reading not available at this time.</p>
                   )}
@@ -156,8 +186,8 @@ export function ReadingTabs({ readings, love, career, health, lucky }: ReadingTa
                     <p className="text-xs text-muted-foreground">Lucky Number</p>
                   </div>
                   <div className="text-center">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent/10 mb-3">
-                      <Palette className="w-5 h-5 text-accent" />
+                    <div className="inline-flex items-center justify-center mb-3">
+                      <GlassOrb color={lucky.color} size="md" />
                     </div>
                     <p className="text-sm font-bold text-foreground">{lucky.color ?? '—'}</p>
                     <p className="text-xs text-muted-foreground">Lucky Color</p>
