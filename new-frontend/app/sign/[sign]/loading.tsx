@@ -1,7 +1,7 @@
 import { Header } from "@/components/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import Aurora from "@/../../../../components/reactbits/Aurora"
+import Aurora from "@/components/reactbits/Aurora"
 
 export default function Loading() {
   return (
