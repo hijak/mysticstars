@@ -1,7 +1,7 @@
 import { Header } from "@/components/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { AuroraBlur } from "@/components/react-bits/aurora-blur"
+import AuroraBlur from "@/components/react-bits/aurora-blur"
 
 export default function Loading() {
   return (

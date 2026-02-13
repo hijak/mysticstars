@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ReadingTabs } from "@/components/reading-tabs"
 import { ArrowLeft } from "lucide-react"
-import { AuroraBlur } from "@/components/react-bits/aurora-blur"
+import AuroraBlur from "@/components/react-bits/aurora-blur"
 
 interface SignPageProps {
   params: Promise<{ sign: string }>
