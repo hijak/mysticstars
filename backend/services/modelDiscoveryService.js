@@ -7,17 +7,17 @@ const fetch = require('node-fetch');
 
 class ModelDiscoveryService {
   constructor() {
-    this.apiBaseUrl = 'https://api.blackbox.ai/v1';
-    this.apiKey = process.env.BLACKBOX_API_KEY;
+    this.apiBaseUrl = 'https://openrouter.ai/api/v1';
+    this.apiKey = process.env.OPENROUTER_API_KEY;
   }
 
   /**
-   * Get the list of all available models from Blackbox AI
+   * Get the list of all available models from OpenRouter
    * @returns {Promise<Array>} List of available models
    */
   async getAvailableModels() {
     if (!this.apiKey) {
-      throw new Error('BLACKBOX_API_KEY environment variable is required');
+      throw new Error('OPENROUTER_API_KEY environment variable is required');
     }
 
     try {
@@ -25,7 +25,9 @@ class ModelDiscoveryService {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'HTTP-Referer': process.env.SITE_URL || 'https://mysticstars.com',
+          'X-Title': 'MysticStars Horoscope'
         }
       });
 
@@ -48,18 +50,15 @@ class ModelDiscoveryService {
    */
   filterFreeModels(models) {
     return models.filter(model => {
-      // Check for free models based on naming patterns
-      return model.id.includes(':free') ||
-             model.id.includes('free') ||
-             model.id.includes('blackboxai') &&
-             (model.id.includes('deepseek') ||
-              model.id.includes('qwen') ||
-              model.id.includes('mistral') ||
-              model.id.includes('meta-llama') ||
-              model.id.includes('google') ||
-              model.id.includes('nvidia') ||
-              model.id.includes('rekaai') ||
-              model.id.includes('nousresearch'));
+      // OpenRouter marks free models with pricing information
+      // Check if prompt pricing is 0 or very low (free tier)
+      const pricing = model.pricing;
+      if (pricing && pricing.prompt && parseFloat(pricing.prompt) === 0) {
+        return true;
+      }
+      // Also check for common free model patterns in the name/id
+      return model.id.includes('free') ||
+             model.id.includes('openrouter/free');
     });
   }
 
@@ -69,25 +68,9 @@ class ModelDiscoveryService {
    * @returns {Array} List of horoscope-optimized models
    */
   getHoroscopeOptimizedModels(models) {
-    const preferredPatterns = [
-      'deepseek-chat-v3',
-      'qwen3-32b',
-      'qwen2.5-72b',
-      'mistral-small-3.2-24b',
-      'llama-4-scout',
-      'shisa-v2-llama3.3-70b',
-      'llama-3.3-nemotron-super-49b',
-      'gemma-3-27b-it',
-      'mistral-nemo',
-      'deephermes-3-llama-3-8b',
-      'reka-flash-3',
-      'deepseek-r1'
-    ];
-
-    return models.filter(model => {
-      return preferredPatterns.some(pattern => model.id.includes(pattern)) &&
-             (model.id.includes(':free') || model.id.includes('blackboxai'));
-    });
+    // For OpenRouter, we'll just use the openrouter/free endpoint
+    // which automatically routes to available free models
+    return models.filter(model => model.id === 'openrouter/free');
   }
 
   /**
@@ -110,7 +93,9 @@ class ModelDiscoveryService {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'HTTP-Referer': process.env.SITE_URL || 'https://mysticstars.com',
+            'X-Title': 'MysticStars Horoscope'
           },
           body: JSON.stringify({
             model: model.id,
@@ -142,39 +127,9 @@ class ModelDiscoveryService {
    * @returns {Promise<string>} Best available model ID
    */
   async getBestHoroscopeModel() {
-    try {
-      // Get all available models
-      const allModels = await this.getAvailableModels();
-      console.log(`Found ${allModels.length} total models`);
-
-      // Filter for horoscope-optimized models
-      const horoscopeModels = this.getHoroscopeOptimizedModels(allModels);
-      console.log(`Found ${horoscopeModels.length} horoscope-optimized models`);
-
-      if (horoscopeModels.length === 0) {
-        // Fallback to any free models
-        const freeModels = this.filterFreeModels(allModels);
-        console.log(`Found ${freeModels.length} free models as fallback`);
-        return freeModels[0]?.id || null;
-      }
-
-      // Test availability of top horoscope models
-      const workingModels = await this.testModelAvailability(
-        horoscopeModels.map(model => ({ id: model.id || model }))
-      );
-
-      if (workingModels.length > 0) {
-        console.log(`✅ Best working model: ${workingModels[0]}`);
-        return workingModels[0];
-      }
-
-      // If no models are working, return the first one and let the fallback logic handle it
-      console.log(`⚠️  No models tested successfully, using first available model`);
-      return horoscopeModels[0]?.id || horoscopeModels[0];
-    } catch (error) {
-      console.error('Error getting best horoscope model:', error);
-      throw error;
-    }
+    // For OpenRouter, we simply use the openrouter/free endpoint
+    // which automatically routes to the best available free model
+    return 'openrouter/free';
   }
 }
 

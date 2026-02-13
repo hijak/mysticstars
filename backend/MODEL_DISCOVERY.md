@@ -1,43 +1,43 @@
-# Blackbox AI Model Discovery System
+# OpenRouter Model Discovery System
 
-This document describes the dynamic model discovery system implemented to automatically find and use working models from Blackbox AI.
+This document describes the model system implemented to use OpenRouter's free model endpoint for horoscope generation.
 
 ## Overview
 
-The application now supports dynamic model discovery to overcome the limitation of hardcoded model lists that become outdated or unavailable. This system automatically:
+The application now uses OpenRouter's `openrouter/free` endpoint which automatically routes requests to the best available free model. This system:
 
-1. **Retrieves available models** from the Blackbox AI API
-2. **Filters for free and horoscope-optimized models**
-3. **Tests model availability** in real-time
-4. **Falls back gracefully** to hardcoded models if needed
+1. **Uses OpenRouter's free endpoint** (`openrouter/free`) for automatic model routing
+2. **Supports manual model selection** via environment variable if needed
+3. **Integrates seamlessly** with OpenRouter's model marketplace
 
 ## Architecture
 
 ### Components
 
 1. **ModelDiscoveryService** (`services/modelDiscoveryService.js`)
-   - Handles communication with Blackbox AI's `/v1/models` endpoint
-   - Filters and categorizes available models
-   - Tests model availability with actual API calls
+   - Handles communication with OpenRouter's `/v1/models` endpoint
+   - Filters for free models based on pricing information
+   - Returns `openrouter/free` as the default model
 
 2. **Updated BlackboxService** (`services/blackboxService.js`)
-   - Integrates with ModelDiscoveryService
-   - Maintains backward compatibility with hardcoded models
+   - Integrates with OpenRouter API
+   - Uses `openrouter/free` as the default model
    - Provides async model initialization
 
 ## Key Features
 
-### Dynamic Model Retrieval
+### OpenRouter Free Model
 
 ```javascript
-// Get all available models from Blackbox AI
-const allModels = await discoveryService.getAvailableModels();
+// The default model automatically routes to available free models
+const modelName = 'openrouter/free';
+```
 
-// Filter for free models
-const freeModels = discoveryService.filterFreeModels(allModels);
+### Manual Model Selection (Optional)
 
-// Get horoscope-optimized models
-const horoscopeModels = discoveryService.getHoroscopeOptimizedModels(allModels);
+```javascript
+// Override with a specific OpenRouter model
+process.env.OPENROUTER_MODEL = 'google/gemma-3-27b-it:free';
 ```
 
 ### Real-time Model Testing
@@ -47,55 +47,34 @@ const horoscopeModels = discoveryService.getHoroscopeOptimizedModels(allModels);
 const workingModels = await discoveryService.testModelAvailability(models);
 ```
 
-### Automatic Best Model Selection
-
-```javascript
-// Get the best available model for horoscope generation
-const bestModel = await discoveryService.getBestHoroscopeModel();
-```
-
-## Model Selection Logic
+### Model Selection Logic
 
 ### 1. Environment Variable (Highest Priority)
 ```bash
-export BLACKBOX_MODEL="blackboxai/specific-model:free"
+export OPENROUTER_MODEL="google/gemma-3-27b-it:free"
 ```
 If set, the application will use this model exclusively.
 
-### 2. Dynamic Discovery (High Priority)
-- Queries Blackbox AI's `/v1/models` endpoint
-- Filters for models with `:free` suffix or `blackboxai` prefix
-- Prioritizes horoscope-optimized models (creative, instruction-following)
-- Tests actual availability before selection
-
-### 3. Hardcoded Fallback (Low Priority)
-If dynamic discovery fails, falls back to the original hardcoded model list.
-
-## Horoscope-Optimized Models
-
-The system prioritizes models known to work well for creative content:
-
-- **deepseek-chat-v3**: Strong creative capabilities
-- **qwen3-32b**: Large context window
-- **mistral-small-3.2**: Good instruction following
-- **llama-4-scout**: Latest LLaMA variant
-- **gemma-3-27b**: Google's creative model
-- **And others...**
+### 2. Default (Recommended)
+Uses `openrouter/free` which automatically routes to the best available free model.
 
 ## API Integration
 
 ### Endpoint Information
-- **Base URL**: `https://api.blackbox.ai/v1/models`
-- **Method**: `GET`
+- **Base URL**: `https://openrouter.ai/api/v1/chat/completions`
+- **Models URL**: `https://openrouter.ai/api/v1/models`
+- **Method**: `POST` for chat, `GET` for models
 - **Authentication**: Bearer token required
-- **Response**: OpenAI-compatible model list format
+- **Response**: OpenAI-compatible format
 
 ### Authentication
 ```javascript
-const response = await fetch('https://api.blackbox.ai/v1/models', {
+const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
   headers: {
-    'Authorization': `Bearer ${process.env.BLACKBOX_API_KEY}`,
-    'Content-Type': 'application/json'
+    'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+    'Content-Type': 'application/json',
+    'HTTP-Referer': 'https://mysticstars.com',
+    'X-Title': 'MysticStars Horoscope'
   }
 });
 ```
@@ -103,97 +82,102 @@ const response = await fetch('https://api.blackbox.ai/v1/models', {
 ## Usage in Application
 
 ### Initialization
-The `BlackboxService` automatically initializes with dynamic discovery:
+The `BlackboxService` automatically initializes with OpenRouter:
 
 ```javascript
-// Starts with fallback model
-this.modelName = process.env.BLACKBOX_MODEL || this.getDefaultFreeModel();
-
-// Async discovery upgrades to better models
-this.initializeModel().catch(err => {
-  console.log('Async model initialization failed:', err.message);
-});
+// Default model
+this.modelName = process.env.OPENROUTER_MODEL || 'openrouter/free';
 ```
 
 ### Runtime Model Refresh
 ```javascript
-// Refresh to potentially better models
+// Refresh to check model status
 await blackboxService.refreshModel();
 ```
 
 ### Fallback Handling
 ```javascript
-// Automatic fallback when current model fails
+// Retry with the same model
 const result = await blackboxService.tryDifferentFreeModels();
 ```
 
 ## Testing
 
-### Test the Model Discovery System
+### Test the OpenRouter Integration
 ```bash
 # Run the test script
 node test-model-discovery.js
 
 # Set your API key first
-export BLACKBOX_API_KEY=your-api-key-here
+export OPENROUTER_API_KEY=your-api-key-here
+```
+
+### Test API Connection
+```bash
+# Test the basic connection
+node test-blackbox.js
 ```
 
 ### Expected Output
 ```
-🔍 Testing Blackbox AI Model Discovery Service...
+🧪 Testing OpenRouter API Integration...
 
-1️⃣  Testing: Get available models...
-✅ Found 47 total models
-   First 5 models:
-   1. blackboxai/deepseek/deepseek-chat-v3-0324:free
-   2. blackboxai/qwen/qwen3-32b:free
-   ...
+📡 Using model: openrouter/free
+🔗 API URL: https://openrouter.ai/api/v1/chat/completions
 
-2️⃣  Testing: Filter free models...
-✅ Found 23 free models
+1️⃣ Testing API connection...
+✅ Connection successful!
+📝 Response: Hello from OpenRouter API!
 
-3️⃣  Testing: Get horoscope-optimized models...
-✅ Found 8 horoscope-optimized models
+2️⃣ Testing reading generation...
+✅ Reading generated successfully!
+⏱️  Generation time: 1234ms
+📊 Model: openrouter/free
 
-4️⃣  Testing: Get best working horoscope model...
-✅ Best working model: blackboxai/qwen/qwen3-32b:free
+📖 Generated Reading:
+───────────────────────────────────────────
+[Your generated horoscope text here]
+───────────────────────────────────────────
+
+🎉 All tests passed! OpenRouter integration is working correctly.
 ```
 
 ## Environment Variables
 
 Required environment variable:
 ```bash
-BLACKBOX_API_KEY=your-blackbox-api-key-here
+OPENROUTER_API_KEY=your-openrouter-api-key-here
 ```
 
 Optional environment variable:
 ```bash
-BLACKBOX_MODEL=specific-model-name  # Overrides dynamic discovery
+OPENROUTER_MODEL=openrouter/free  # Uses default free routing
 ```
 
 ## Error Handling
 
 ### Graceful Degradation
-1. **API Key Missing**: Falls back to hardcoded models
-2. **API Errors**: Logs error, uses hardcoded models
-3. **No Working Models**: Tries hardcoded models with retry logic
-4. **Rate Limiting**: Implements delays between model tests
+1. **API Key Missing**: Logs warning, uses MOCK mode
+2. **API Errors**: Retries with exponential backoff
+3. **Rate Limiting**: Implements delays between retries
+4. **Model Failures**: Falls back to retry logic
 
 ### Debug Logging
 The system provides comprehensive debug logging:
 ```
-[DEBUG] Attempting to discover best available model...
-[DEBUG] Using dynamically discovered model: blackboxai/qwen/qwen3-32b:free
-[DEBUG] Found 8 working models dynamically
-✅ Success with dynamic model: blackboxai/qwen/qwen3-32b:free
+[DEBUG] Using OpenRouter free model: openrouter/free
+[DEBUG] BlackboxService initialized: {
+  model: 'openrouter/free',
+  apiUrl: 'https://openrouter.ai/api/v1/chat/completions'
+}
 ```
 
 ## Benefits
 
-1. **Automatic Updates**: Adapts to new/removed models
-2. **Higher Reliability**: Tests actual model availability
-3. **Better Performance**: Uses currently working models
-4. **Backward Compatibility**: Maintains original fallback logic
+1. **Automatic Model Selection**: OpenRouter routes to the best available free model
+2. **High Reliability**: No need to maintain hardcoded model lists
+3. **Better Performance**: Always uses currently working models
+4. **Simple Configuration**: Just set the API key and go
 5. **Debugging Support**: Comprehensive logging for troubleshooting
 
 ## Troubleshooting
@@ -204,36 +188,47 @@ The system provides comprehensive debug logging:
 ```
 Authentication Error, No api key passed in
 ```
-- Set `BLACKBOX_API_KEY` environment variable
-- Verify API key is valid
+- Set `OPENROUTER_API_KEY` environment variable
+- Get your API key from https://openrouter.ai/keys
 
-**No Models Found**
+**No Credits**
 ```
-Found 0 total models
+No credits found
 ```
-- Check API key permissions
-- Verify network connectivity
-- API may be temporarily unavailable
+- Add credits to your OpenRouter account
+- OpenRouter offers free tier credits
 
-**All Models Failing**
+**Rate Limiting**
 ```
-No working model found
+Rate limit exceeded
 ```
-- API rate limiting may be active
-- Try again after a few minutes
-- Check Blackbox AI service status
+- Wait a few minutes before retrying
+- Consider adding more credits to your account
 
 ### Manual Model Specification
-If automatic discovery fails, you can manually specify a model:
+If you want to use a specific model instead of the free router:
 ```bash
-export BLACKBOX_MODEL="blackboxai/qwen/qwen3-32b:free"
+export OPENROUTER_MODEL="google/gemma-3-27b-it:free"
 ```
+
+## Getting Started with OpenRouter
+
+1. **Create an account**: Go to https://openrouter.ai/
+2. **Get your API key**: Navigate to https://openrouter.ai/keys
+3. **Add credits**: OpenRouter offers free credits for new accounts
+4. **Set the environment variable**:
+   ```bash
+   export OPENROUTER_API_KEY=sk-or-v1-your-key-here
+   ```
+5. **Test the connection**:
+   ```bash
+   node test-blackbox.js
+   ```
 
 ## Future Enhancements
 
 Potential improvements:
 1. **Model Performance Caching**: Cache successful model performance metrics
-2. **Regional Model Selection**: Choose models based on geographic availability
-3. **Cost Optimization**: Prioritize models with better performance/cost ratios
-4. **Model Health Monitoring**: Continuous monitoring of model availability
-5. **Smart Load Balancing**: Distribute requests across multiple working models
+2. **Cost Optimization**: Monitor token usage and costs
+3. **Model Health Monitoring**: Continuous monitoring of model availability
+4. **Smart Load Balancing**: Distribute requests across multiple models

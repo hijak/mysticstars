@@ -3,18 +3,18 @@ const ModelDiscoveryService = require('./modelDiscoveryService');
 
 class BlackboxService {
   constructor() {
-    this.apiKey = process.env.BLACKBOX_API_KEY;
+    this.apiKey = process.env.OPENROUTER_API_KEY;
     if (!this.apiKey) {
-      console.warn('BLACKBOX_API_KEY not found. Using MOCK mode.');
+      console.warn('OPENROUTER_API_KEY not found. Using MOCK mode.');
       this.isMock = true;
     }
 
     this.modelDiscovery = new ModelDiscoveryService();
-    this.apiBaseUrl = 'https://api.blackbox.ai/v1/chat/completions';
+    this.apiBaseUrl = 'https://openrouter.ai/api/v1/chat/completions';
 
-    // Initialize with environment variable model or fallback to discovery
+    // Initialize with environment variable model or fallback to default
     // Note: initializeModel is async, so we start it but don't wait here
-    this.modelName = process.env.BLACKBOX_MODEL || this.getDefaultFreeModel();
+    this.modelName = process.env.OPENROUTER_MODEL || 'openrouter/free';
     if (!this.isMock) {
       this.initializeModel().catch(err => {
         console.log('[DEBUG] Async model initialization failed:', err.message);
@@ -43,27 +43,18 @@ class BlackboxService {
   async initializeModel() {
     try {
       // First, try to use environment variable if set
-      if (process.env.BLACKBOX_MODEL) {
-        this.modelName = process.env.BLACKBOX_MODEL;
+      if (process.env.OPENROUTER_MODEL) {
+        this.modelName = process.env.OPENROUTER_MODEL;
         console.log(`[DEBUG] Using environment variable model: ${this.modelName}`);
         return;
       }
 
-      // Try to get the best available model dynamically
-      console.log('[DEBUG] Attempting to discover best available model...');
-      const bestModel = await this.modelDiscovery.getBestHoroscopeModel();
-
-      if (bestModel) {
-        this.modelName = bestModel;
-        console.log(`[DEBUG] Using dynamically discovered model: ${this.modelName}`);
-      } else {
-        // Fallback to hardcoded list
-        this.modelName = this.getDefaultFreeModel();
-        console.log(`[DEBUG] Fallback to hardcoded model: ${this.modelName}`);
-      }
+      // Use the default OpenRouter free model
+      this.modelName = 'openrouter/free';
+      console.log(`[DEBUG] Using OpenRouter free model: ${this.modelName}`);
     } catch (error) {
-      console.log('[DEBUG] Model discovery failed, using fallback:', error.message);
-      this.modelName = this.getDefaultFreeModel();
+      console.log('[DEBUG] Model initialization failed, using fallback:', error.message);
+      this.modelName = 'openrouter/free';
     }
 
     console.log('[DEBUG] BlackboxService initialized:', {
@@ -73,120 +64,50 @@ class BlackboxService {
   }
 
   /**
-   * Refresh the model list and update current model if needed
+   * Refresh the model (OpenRouter handles model routing automatically)
    */
   async refreshModel() {
-    try {
-      const bestModel = await this.modelDiscovery.getBestHoroscopeModel();
-      if (bestModel && bestModel !== this.modelName) {
-        console.log(`[DEBUG] Switching to better model: ${bestModel} (was: ${this.modelName})`);
-        this.modelName = bestModel;
-      }
-      return this.modelName;
-    } catch (error) {
-      console.log('[DEBUG] Model refresh failed:', error.message);
-      return this.modelName;
-    }
+    console.log('[DEBUG] OpenRouter handles model routing automatically');
+    return this.modelName;
   }
 
   /**
    * Get current available models (for debugging/monitoring)
+   * Note: OpenRouter doesn't have a public models endpoint
    */
   async getAvailableModels() {
-    try {
-      return await this.modelDiscovery.getAvailableModels();
-    } catch (error) {
-      console.log('[DEBUG] Failed to get available models:', error.message);
-      return [];
-    }
+    console.log('[DEBUG] OpenRouter handles model routing automatically');
+    return [{ id: 'openrouter/free', name: 'OpenRouter Free (auto-routes to available free models)' }];
   }
 
   getDefaultFreeModel() {
-    // Prioritized models for horoscope generation (creative, engaging content)
-    // Now includes reasoning models since we can extract content from them
-    const freeModels = [
-      'blackboxai/meta-llama/llama-4-scout',                   // Verified working (no suffix)
-      'blackboxai/deepseek/deepseek-chat',                       // Try without suffix
-      'blackboxai/meta-llama/llama-3.3-70b-instruct',           // Try without suffix
-      'blackboxai/deepseek/deepseek-r1',                         // Try without suffix
-      'blackboxai/meta-llama/llama-4-scout:free',               // Fallback with suffix
-      'blackboxai/deepseek/deepseek-chat:free',                 // Fallback with suffix
-    ];
-
-    console.log('[DEBUG] Available horoscope-optimized models (with reasoning extraction):', freeModels);
-    return freeModels[0]; // Start with the first one
+    return 'openrouter/free';
   }
 
-  // Method to try different free models - now uses dynamic discovery
+  // Method to retry with the OpenRouter free model (OpenRouter handles model routing automatically)
   async tryDifferentFreeModels() {
-    try {
-      console.log('[DEBUG] Attempting dynamic model discovery for fallback...');
-      const workingModels = await this.modelDiscovery.testModelAvailability(
-        (await this.modelDiscovery.getAvailableModels()).slice(0, 10)
-      );
+    console.log('[DEBUG] Retrying with OpenRouter free model...');
 
-      if (workingModels.length > 0) {
-        console.log(`[DEBUG] Found ${workingModels.length} working models dynamically`);
-        for (const model of workingModels) {
-          console.log(`[DEBUG] Trying dynamic model: ${model}`);
-          this.modelName = model;
-
-          // Test this model with a full reading generation
-          const testResult = await this.testConnection();
-          if (testResult.success) {
-            console.log(`✅ Success with dynamic model: ${model}`);
-            return { success: true, workingModel: model, message: testResult.message };
-          }
+    // Try the openrouter/free model up to 3 times
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        console.log(`[DEBUG] Attempt ${attempt}/3...`);
+        const result = await this.testConnection();
+        if (result.success) {
+          console.log(`✅ Success with OpenRouter free model (attempt ${attempt})`);
+          return { success: true, workingModel: 'openrouter/free', message: result.message };
+        } else {
+          console.log(`  Attempt ${attempt} failed: ${result.error}`);
         }
-      }
-    } catch (error) {
-      console.log('[DEBUG] Dynamic model discovery failed, using hardcoded fallback:', error.message);
-    }
-
-    // Fallback to hardcoded models if dynamic discovery fails
-    console.log('[DEBUG] Using hardcoded model fallback...');
-    const freeModels = [
-      'blackboxai/deepseek/deepseek-chat-v3-0324:free',         // Strong creative capabilities, direct output
-      'blackboxai/qwen/qwen3-32b:free',                         // Large context, good creativity
-      'blackboxai/mistralai/mistral-small-3.2-24b-instruct:free', // Good instruction following
-      'blackboxai/meta-llama/llama-4-scout:free',               // Latest LLaMA variant
-      'blackboxai/shisa-ai/shisa-v2-llama3.3-70b:free',        // Large model, good for creative tasks
-      'blackboxai/nvidia/llama-3.3-nemotron-super-49b-v1:free', // NVIDIA optimized
-      'blackboxai/qwen/qwen2.5-72b-instruct:free',             // Large instruction-tuned model
-      'blackboxai/google/gemma-3-27b-it:free',                 // Google's creative model
-      'blackboxai/mistralai/mistral-nemo:free',                // Good balance of creativity/accuracy
-      'blackboxai/nousresearch/deephermes-3-llama-3-8b-preview:free', // Fine-tuned for conversations
-      'blackboxai/rekaai/reka-flash-3:free',                   // Fast and creative
-      'blackboxai/deepseek/deepseek-r1:free'                   // Reasoning model (we can extract content)
-    ];
-
-    for (const model of freeModels) {
-      console.log(`[DEBUG] Trying model: ${model}`);
-      this.modelName = model;
-
-      // Try each model up to 3 times before moving to the next
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-          console.log(`  Attempt ${attempt}/3...`);
-          const result = await this.testConnection();
-          if (result.success) {
-            console.log(`✅ Success with model: ${model} (attempt ${attempt})`);
-            return { success: true, workingModel: model, message: result.message };
-          } else {
-            console.log(`  Attempt ${attempt} failed: ${result.error}`);
-          }
-        } catch (error) {
-          console.log(`  Attempt ${attempt} error: ${error.message}`);
-        }
-
-        // Wait before retrying (unless it's the last attempt)
-        if (attempt < 3) {
-          console.log(`  Waiting 2 seconds before retry...`);
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
+      } catch (error) {
+        console.log(`  Attempt ${attempt} error: ${error.message}`);
       }
 
-      console.log(`❌ All attempts failed for model: ${model}, moving to next model...`);
+      // Wait before retrying (unless it's the last attempt)
+      if (attempt < 3) {
+        console.log(`  Waiting 2 seconds before retry...`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
     }
 
     return { success: false, error: 'No working free model found' };
@@ -360,7 +281,9 @@ Your response should start immediately with the horoscope text and contain nothi
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'HTTP-Referer': process.env.SITE_URL || 'https://mysticstars.com',
+          'X-Title': 'MysticStars Horoscope'
         },
         body: JSON.stringify(requestBody),
         timeout: 30000 // 30 second timeout
@@ -716,7 +639,9 @@ Your response should start immediately with the horoscope text and contain nothi
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'HTTP-Referer': process.env.SITE_URL || 'https://mysticstars.com',
+          'X-Title': 'MysticStars Horoscope'
         },
         body: JSON.stringify(requestBody)
       });

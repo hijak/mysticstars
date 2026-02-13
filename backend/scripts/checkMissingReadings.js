@@ -16,8 +16,8 @@ require('dotenv').config();
 const API_BASE_URL = process.env.API_BASE_URL || 'http://mysticstars-api:3000';
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-const BLACKBOX_API_KEY = process.env.BLACKBOX_API_KEY;
-const BLACKBOX_MODEL = process.env.BLACKBOX_MODEL;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL;
 
 // Lazy-load the generator to allow running in alert-only mode
 let ReadingGenerator = null;
@@ -116,7 +116,7 @@ async function main() {
     console.warn(`Health check failed: ${e.message}`);
   }
 
-  const canRegenerate = Boolean(BLACKBOX_API_KEY);
+  const canRegenerate = Boolean(OPENROUTER_API_KEY);
   let generator = null;
   if (canRegenerate) {
     try {
@@ -162,7 +162,7 @@ async function main() {
   if (!generator && canRegenerate) {
     finalMessage += `\n\nNote: Regeneration enabled but generator could not load.`;
   } else if (!canRegenerate) {
-    finalMessage += `\n\nNote: Set BLACKBOX_API_KEY to enable auto-regeneration.`;
+    finalMessage += `\n\nNote: Set OPENROUTER_API_KEY to enable auto-regeneration.`;
   }
 
   try {

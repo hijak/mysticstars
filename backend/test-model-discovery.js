@@ -8,7 +8,7 @@
 const ModelDiscoveryService = require('./services/modelDiscoveryService');
 
 async function testModelDiscovery() {
-  console.log('🔍 Testing Blackbox AI Model Discovery Service...\n');
+  console.log('🔍 Testing OpenRouter Model Discovery Service...\n');
 
   const discoveryService = new ModelDiscoveryService();
 
@@ -65,9 +65,9 @@ async function testModelDiscovery() {
   } catch (error) {
     console.error('❌ Error testing model discovery:', error.message);
 
-    if (error.message.includes('BLACKBOX_API_KEY')) {
-      console.log('\n💡 Make sure to set the BLACKBOX_API_KEY environment variable');
-      console.log('   Example: export BLACKBOX_API_KEY=your-api-key-here');
+    if (error.message.includes('OPENROUTER_API_KEY')) {
+      console.log('\n💡 Make sure to set the OPENROUTER_API_KEY environment variable');
+      console.log('   Example: export OPENROUTER_API_KEY=your-api-key-here');
     } else if (error.message.includes('Authentication')) {
       console.log('\n💡 Check that your API key is valid and has proper permissions');
     } else if (error.message.includes('401') || error.message.includes('403')) {
