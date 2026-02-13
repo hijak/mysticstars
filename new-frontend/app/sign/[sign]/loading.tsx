@@ -1,13 +1,24 @@
 import { Header } from "@/components/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import Aurora from "@/components/reactbits/Aurora"
+import { AuroraBlur } from "@/components/react-bits/aurora-blur"
 
 export default function Loading() {
   return (
     <div className="relative min-h-screen">
       <div className="fixed inset-0 -z-10 overflow-hidden">
-        <Aurora colorStops={["#8b5cf6", "#a78bfa", "#c4b5fd", "#7c3aed"]} speed={3} blur={80} />
+      <AuroraBlur
+        width="100%"
+        height="100vh"
+        speed={1}
+        brightness={0.7}
+        opacity={0.9}
+        layers={[
+          { color: "#8b5cf6", speed: 0.4, intensity: 0.5 },
+          { color: "#a78bfa", speed: 0.2, intensity: 0.4 },
+          { color: "#7c3aed", speed: 0.3, intensity: 0.3 },
+        ]}
+      />
       </div>
       <Header />
 
