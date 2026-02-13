@@ -9,34 +9,22 @@ export default function Loading() {
   return (
     <div className="relative min-h-screen">
       <div className="fixed inset-0 -z-10 overflow-hidden">
-      <AuroraBlur
-        width="100%"
-        height="100vh"
-        speed={0.3}
-        brightness={0.5}
-        opacity={0.45}
-        movementX={-0.5}
-        movementY={-3}
-        verticalFade={0.75}
-        bloomIntensity={2.3}
-        layers={[
-          { color: defaultColors[0], speed: 0.4, intensity: 0.5 },
-          { color: defaultColors[1], speed: 0.2, intensity: 0.4 },
-          { color: defaultColors[2], speed: 0.3, intensity: 0.3 },
-        ]}
-      />
-      </div>
-        opacity={0.45}
-        movementX={-0.5}
-        movementY={-3}
-        verticalFade={0.75}
-        bloomIntensity={2.3}
-        layers={[
-          { color: defaultColors[0], speed: 0.4, intensity: 0.5 },
-          { color: defaultColors[1], speed: 0.2, intensity: 0.4 },
-          { color: defaultColors[2], speed: 0.3, intensity: 0.3 },
-        ]}
-      />
+        <AuroraBlur
+          width="100%"
+          height="100vh"
+          speed={0.3}
+          brightness={0.5}
+          opacity={0.45}
+          movementX={-0.5}
+          movementY={-3}
+          verticalFade={0.75}
+          bloomIntensity={2.3}
+          layers={[
+            { color: defaultColors[0], speed: 0.4, intensity: 0.5 },
+            { color: defaultColors[1], speed: 0.2, intensity: 0.4 },
+            { color: defaultColors[2], speed: 0.3, intensity: 0.3 },
+          ]}
+        />
       </div>
       <Header />
 
