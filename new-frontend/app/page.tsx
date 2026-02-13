@@ -3,6 +3,7 @@ import { LightRays } from "@/components/magicui/light-rays"
 import { ZodiacCard } from "@/components/zodiac-card"
 import { zodiacSigns } from "@/lib/zodiac-data"
 import { Sparkles, Moon, Star } from "lucide-react"
+import GlitterWarp from "@/components/react-bits/glitter-warp"
 
 export const dynamic = 'force-dynamic'
 
@@ -17,7 +18,19 @@ export default function HomePage() {
   return (
     <div className="relative min-h-screen">
 
-      <LightRays />
+      <div className="fixed inset-0 -z-10 overflow-hidden">
+        <GlitterWarp
+          autoplay={true}
+          speed={0.4}
+          turbulence={0.4}
+          density={22.5}
+          starSize={0.13}
+          focalDepth={0.14}
+          starColor="#b19eef"
+        />
+        <div className="fixed inset-0 bg-black/60" />
+        <LightRays />
+      </div>
       <Header />
 
       <main className="container mx-auto px-4 py-12">
