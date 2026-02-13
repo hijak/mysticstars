@@ -1,13 +1,13 @@
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { Header } from "@/components/header"
-import { GridBeam } from "@/components/beam-effect"
 import { zodiacSigns } from "@/lib/zodiac-data"
 import { apiClient } from "@/lib/api-client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ReadingTabs } from "@/components/reading-tabs"
 import { ArrowLeft } from "lucide-react"
+import Aurora from "@/../../components/reactbits/Aurora"
 
 interface SignPageProps {
   params: Promise<{ sign: string }>
@@ -53,8 +53,9 @@ export default async function SignPage({ params }: SignPageProps) {
 
   return (
     <div className="relative min-h-screen">
-
-      <GridBeam />
+      <div className="fixed inset-0 -z-10 overflow-hidden">
+        <Aurora colorStops={["#8b5cf6", "#a78bfa", "#c4b5fd", "#7c3aed"]} speed={3} blur={80} />
+      </div>
       <Header />
 
       <main className="container mx-auto px-4 py-12">

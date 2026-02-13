@@ -1,13 +1,14 @@
 import { Header } from "@/components/header"
-import { GridBeam } from "@/components/beam-effect"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import Aurora from "@/../../components/reactbits/Aurora"
 
 export default function Loading() {
   return (
     <div className="relative min-h-screen">
-
-      <GridBeam />
+      <div className="fixed inset-0 -z-10 overflow-hidden">
+        <Aurora colorStops={["#8b5cf6", "#a78bfa", "#c4b5fd", "#7c3aed"]} speed={3} blur={80} />
+      </div>
       <Header />
 
       <main className="container mx-auto px-4 py-12">
