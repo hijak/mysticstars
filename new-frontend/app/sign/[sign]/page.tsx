@@ -13,6 +13,13 @@ interface SignPageProps {
   params: Promise<{ sign: string }>
 }
 
+const elementColors: Record<string, string[]> = {
+  Fire: ["#ff4500", "#ff6b35", "#ff8c00", "#dc143c"],
+  Water: ["#00bfff", "#1e90ff", "#4169e1", "#6495ed"],
+  Earth: ["#228b22", "#32cd32", "#3cb371", "#2e8b57"],
+  Air: ["#87ceeb", "#b0e0e6", "#add8e6", "#e0ffff"],
+}
+
 export default async function SignPage({ params }: SignPageProps) {
   const { sign } = await params
   const signData = zodiacSigns.find((z) => z.sign.toLowerCase() === sign.toLowerCase())
@@ -51,19 +58,25 @@ export default async function SignPage({ params }: SignPageProps) {
     day: "numeric",
   })
 
+  const colors = elementColors[signData.element] || elementColors.Fire
+
   return (
     <div className="relative min-h-screen">
       <div className="fixed inset-0 -z-10 overflow-hidden">
         <AuroraBlur
           width="100%"
           height="100vh"
-          speed={1}
-          brightness={0.7}
-          opacity={0.9}
+          speed={0.3}
+          brightness={0.5}
+          opacity={0.45}
+          movementX={-0.5}
+          movementY={-3}
+          verticalFade={0.75}
+          bloomIntensity={2.3}
           layers={[
-            { color: "#8b5cf6", speed: 0.4, intensity: 0.5 },
-            { color: "#a78bfa", speed: 0.2, intensity: 0.4 },
-            { color: "#7c3aed", speed: 0.3, intensity: 0.3 },
+            { color: colors[0], speed: 0.4, intensity: 0.5 },
+            { color: colors[1], speed: 0.2, intensity: 0.4 },
+            { color: colors[2], speed: 0.3, intensity: 0.3 },
           ]}
         />
       </div>
