@@ -4,6 +4,8 @@ import { ZodiacCard } from "@/components/zodiac-card"
 import { zodiacSigns } from "@/lib/zodiac-data"
 import { Sparkles, Moon, Star } from "lucide-react"
 
+export const dynamic = 'force-dynamic'
+
 export default function HomePage() {
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
